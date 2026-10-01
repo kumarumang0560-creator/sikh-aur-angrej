@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Mock Test - Sikh & British History</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- MathJax CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+    <!-- html2pdf CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        .drawer-transition { transition: transform 0.3s ease-in-out; }
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans text-gray-800 antialiased min-h-screen flex flex-col">
+
+    <!-- TOP NAVIGATION BAR -->
+    <header class="bg-blue-900 text-white p-3 shadow-md flex justify-between items-center sticky top-0 z-30">
+        <div class="flex items-center space-x-2">
+            <span class="text-xs md:text-sm font-semibold bg-blue-800 px-2.5 py-1 rounded">
+                ⏱️ Overall: <span id="overall-timer">01:00:00</span>
+            </span>
+        </div>
+        <div class="bg-yellow-500 text-black font-bold text-xs md:text-sm px-3 py-1 rounded-md shadow">
+            ⏳ Q Timer: <span id="q-timer">01:12</span>
+        </div>
+        <div class="flex items-center space-x-2">
+            <button id="lang-toggle-btn" onclick="toggleLanguage()" class="bg-blue-700 hover:bg-blue-600 text-xs px-2.5 py-1 rounded font-medium border border-blue-400">
+                हिंदी | Eng
+            </button>
+            <button onclick="toggleDrawer()" class="p-1 rounded bg-blue-800 hover:bg-blue-700 md:hidden">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- MAIN CONTAINER -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-3 md:p-6 flex flex-col">
+        
+        <!-- PHASE 1: ENTRY SCREEN -->
+        <section id="phase-1" class="bg-white rounded-lg shadow-lg p-6 max-w-md mx-auto my-auto w-full">
+            <h2 class="text-2xl font-bold text-blue-900 mb-4 text-center">Student Registration / छात्र पंजीकरण</h2>
+            <form onsubmit="submitPhase1(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Full Name / पूरा नाम</label>
+                    <input type="text" id="student-name" required class="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="Enter full name">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Roll Number / अनुक्रमांक</label>
+                    <input type="text" id="student-roll" required class="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="Enter roll number">
+                </div>
+                <button type="submit" class="w-full bg-blue-800 text-white font-semibold py-2.5 rounded hover:bg-blue-900 transition">Proceed / आगे बढ़ें</button>
+            </form>
+        </section>
+
+        <!-- PHASE 2: INSTRUCTIONS SCREEN -->
+        <section id="phase-2" class="hidden bg-white rounded-lg shadow-lg p-6 max-w-2xl mx-auto my-auto w-full">
+            <h2 class="text-xl font-bold text-blue-900 mb-2 border-b pb-2">Exam Instructions / परीक्षा के निर्देश</h2>
+            <div class="bg-blue-50 p-3 rounded mb-4 text-sm">
+                <p><strong>Candidate Name:</strong> <span id="disp-name"></span></p>
+                <p><strong>Roll Number:</strong> <span id="disp-roll"></span></p>
+            </div>
+            <div class="text-sm space-y-2 text-gray-700 mb-6 max-h-60 overflow-y-auto pr-2">
+                <p>1. Total Questions: <strong>80</strong> | Total Time: <strong>60 Minutes</strong>.</p>
+                <p>2. Each question carries equal marks. There is no negative marking.</p>
+                <p>3. Question Timer is set to 1 minute 12 seconds per question and resets automatically on changing questions.</p>
+                <p>4. Use the bottom navigation controls to save answers or mark items for review.</p>
+                <p>5. Test will automatically submit when the total time expires.</p>
+            </div>
+            <button onclick="startTest()" class="w-full bg-green-600 text-white font-semibold py-2.5 rounded hover:bg-green-700 transition">Start Test / परीक्षा शुरू करें</button>
+        </section>
+
+        <!-- PHASE 3: LIVE TEST ENGINE -->
+        <section id="phase-3" class="hidden flex-1 flex flex-col md:flex-row gap-4 relative">
+            <!-- Question Viewport -->
+            <div class="flex-1 bg-white rounded-lg shadow p-4 md:p-6 flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-center border-b pb-3 mb-4">
+                        <span class="font-bold text-blue-900 text-lg">Question <span id="q-curr-num">1</span> of 80</span>
+                        <span id="q-status-tag" class="text-xs px-2 py-1 rounded bg-gray-200 text-gray-700 font-medium">Not Visited</span>
+                    </div>
+                    <div id="q-text" class="text-base md:text-lg mb-6 leading-relaxed font-medium"></div>
+                    <div id="q-options" class="space-y-3"></div>
+                </div>
+
+                <!-- Bottom Controls -->
+                <div class="mt-6 border-t pt-4 space-y-3">
+                    <div class="flex flex-wrap gap-2 justify-between">
+                        <button onclick="markForReview()" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded text-xs md:text-sm font-semibold flex-1">Mark for Review & Next</button>
+                        <button onclick="saveAndNext()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-xs md:text-sm font-semibold flex-1">Save & Next</button>
+                    </div>
+                    <div class="flex justify-between items-center text-xs md:text-sm pt-2">
+                        <button onclick="prevQuestion()" class="text-blue-700 underline font-medium hover:text-blue-900">« Previous</button>
+                        <button onclick="clearResponse()" class="text-red-600 underline font-medium hover:text-red-800">Clear Response</button>
+                        <button onclick="confirmSubmit()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded font-bold">Submit Test</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Side Palette Drawer -->
+            <div id="side-drawer" class="fixed inset-y-0 right-0 w-72 bg-white shadow-2xl p-4 transform translate-x-full md:relative md:translate-x-0 md:shadow-none md:border-l md:w-64 drawer-transition z-40 flex flex-col">
+                <div class="flex justify-between items-center border-b pb-2 mb-3">
+                    <h3 class="font-bold text-gray-800">Question Palette</h3>
+                    <button onclick="toggleDrawer()" class="md:hidden text-gray-500 hover:text-gray-700">✕</button>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-xs mb-4 border-b pb-3">
+                    <div class="flex items-center space-x-1.5"><span class="w-3 h-3 bg-green-500 rounded-full"></span><span>Answered</span></div>
+                    <div class="flex items-center space-x-1.5"><span class="w-3 h-3 bg-red-500 rounded-full"></span><span>Not Answered</span></div>
+                    <div class="flex items-center space-x-1.5"><span class="w-3 h-3 bg-purple-600 rounded-full"></span><span>Review</span></div>
+                    <div class="flex items-center space-x-1.5"><span class="w-3 h-3 bg-gray-300 rounded-full"></span><span>Not Visited</span></div>
+                </div>
+                <div id="palette-grid" class="grid grid-cols-5 gap-2 overflow-y-auto flex-1 pr-1"></div>
+            </div>
+        </section>
+
+        <!-- RESULT & SCORECARD SCREEN -->
+        <section id="phase-result" class="hidden bg-white rounded-lg shadow-lg p-6 max-w-4xl mx-auto w-full my-4">
+            <div id="pdf-content" class="p-2">
+                <div class="border-b pb-4 mb-4 text-center">
+                    <h2 class="text-2xl font-bold text-blue-900">Test Result Summary / परीक्षा परिणाम</h2>
+                    <p class="text-sm text-gray-600 mt-1">Official Mock Test Scorecard</p>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 bg-blue-50 p-4 rounded-lg mb-6 text-sm">
+                    <div><strong>Name:</strong> <span id="res-name"></span></div>
+                    <div><strong>Roll No:</strong> <span id="res-roll"></span></div>
+                    <div><strong>Score:</strong> <span id="res-score"></span> / 80</div>
+                    <div><strong>Status:</strong> <span id="res-status" class="font-bold"></span></div>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 text-center">
+                    <div class="p-3 bg-green-100 rounded-lg"><div class="text-xs text-green-700">Correct</div><div id="res-correct" class="text-xl font-bold text-green-800">0</div></div>
+                    <div class="p-3 bg-red-100 rounded-lg"><div class="text-xs text-red-700">Incorrect</div><div id="res-wrong" class="text-xl font-bold text-red-800">0</div></div>
+                    <div class="p-3 bg-gray-100 rounded-lg"><div class="text-xs text-gray-700">Unattempted</div><div id="res-unattempted" class="text-xl font-bold text-gray-800">0</div></div>
+                    <div class="p-3 bg-purple-100 rounded-lg"><div class="text-xs text-purple-700">Accuracy</div><div id="res-accuracy" class="text-xl font-bold text-purple-800">0%</div></div>
+                </div>
+
+                <div class="flex justify-between items-center mb-4 no-print">
+                    <h3 class="text-lg font-bold text-gray-800">Detailed Solutions & Step-by-Step Explanation</h3>
+                    <button onclick="downloadPDF()" class="bg-blue-800 hover:bg-blue-900 text-white text-xs md:text-sm px-4 py-2 rounded font-semibold shadow">📥 Download Result & Solutions PDF</button>
+                </div>
+
+                <div id="solutions-container" class="space-y-6 border-t pt-4"></div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // QUESTION DATABASE (ALL 80 MCQS BILINGUAL)
+        const rawDatabase = [
+            {
+                q_hi: "बंदा बहादुर से जुड़े ऐतिहासिक स्थलों को कालानुक्रम व्यवस्थित कीजिए: 1. राजौरी (जन्म स्थल) 2. लौहगढ़ (राजधानी) 3. सरहिंद (वजीर खाँ पर विजय) 4. गुरदासपुर नांगल (गिरफ्तारी)",
+                q_en: "Arrange the historical sites associated with Banda Bahadur in chronological order: 1. Rajouri (Birthplace) 2. Lohgarh (Capital) 3. Sirhind (Victory over Wazir Khan) 4. Gurdaspur Nangal (Arrest)",
+                options_hi: ["1, 3, 2, 4", "2, 1, 4, 3", "1, 2, 3, 4", "4, 3, 2, 1"],
+                options_en: ["1, 3, 2, 4", "2, 1, 4, 3", "1, 2, 3, 4", "4, 3, 2, 1"],
+                ans: 2,
+                exp_hi: "बंदा बहादुर का जन्म पुंछ के राजौरी में हुआ, लौहगढ़ को केंद्र बनाया, सरहिंद के वजीर खाँ को मारा और गुरदासपुर में पकड़े गए।",
+                exp_en: "Banda Bahadur was born in Rajouri (Poonch), established Lohgarh as his capital, defeated Wazir Khan of Sirhind, and was captured at Gurdaspur Nangal."
+            },
+            {
+                q_hi: "सिख गुरुओं एवं उनसे संबंधित घटनाओं के संदर्भ में कौन-सा युग्म असुमेलित है?",
+                q_en: "Which of the following pairs regarding Sikh Gurus and related events is incorrectly matched?",
+                options_hi: ["गुरु हरराय - अमृतसर की किलेबंदी", "गुरु हरकिशन - चेचक से मृत्यु", "गुरु तेग बहादुर - 1675 ई. में औरंगजेब द्वारा शहादत", "गुरु अर्जुन देव - 1606 ई. में जहांगीर द्वारा शहादत"],
+                options_en: ["Guru Har Rai - Fortification of Amritsar", "Guru Harkrishan - Death due to Smallpox", "Guru Tegh Bahadur - Martyrdom by Aurangzeb in 1675 AD", "Guru Arjan Dev - Martyrdom by Jahangir in 1606 AD"],
+                ans: 0,
+                exp_hi: "अमृतसर की किलेबंदी और सैन्य संगठन का निर्माण छठे गुरु हरगोविंद जी ने किया था, सातवें गुरु हरराय जी ने नहीं।",
+                exp_en: "The fortification of Amritsar and military organization were carried out by the 6th Guru, Guru Hargobind Ji, not the 7th Guru, Guru Har Rai Ji."
+            },
+            {
+                q_hi: "गुरु अमरदास जी के संदर्भ में कौन सही है? 1. इन्होंने सिखों के लिए हिंदुओं से पृथक विवाह पद्धति लवन का प्रचलन किया। 2. इन्होंने सिख धर्म के प्रचार-प्रसार हेतु 22 गद्दियों की स्थापना की और प्रत्येक पर एक महंत नियुक्त किया।",
+                q_en: "Which statements are correct regarding Guru Amar Das Ji? 1. He introduced the 'Lavan' marriage ceremony distinct from Hindu rituals for Sikhs. 2. He established 22 seats (Gaddis) for spreading Sikhism and appointed a Mahant for each.",
+                options_hi: ["केवल 2", "केवल 1", "1 और 2 दोनों", "इनमें से कोई नहीं"],
+                options_en: ["Only 2", "Only 1", "Both 1 and 2", "None of these"],
+                ans: 2,
+                exp_hi: "तीसरे गुरु अमरदास जी ने हिंदुओं से पृथक लवन विवाह पद्धति शुरू की और सिख धर्म के प्रसार हेतु 22 गद्दियों पर महंत नियुक्त किए।",
+                exp_en: "The 3rd Guru, Guru Amar Das Ji, introduced the distinct Lavan marriage system and established 22 Gaddis with appointed Mahants for propagating Sikhism."
+            },
+            {
+                q_hi: "सिख गुरुओं और उनके समकालीन मुगल शासकों का सही मिलान पहचानिए: (i) गुरु अर्जुन देव -> जहांगीर (ii) गुरु तेग बहादुर -> औरंगजेब",
+                q_en: "Identify the correct matching of Sikh Gurus and their contemporary Mughal rulers: (i) Guru Arjan Dev -> Jahangir (ii) Guru Tegh Bahadur -> Aurangzeb",
+                options_hi: ["1 और 2 दोनों", "इनमें से कोई नहीं", "केवल 1", "केवल 2"],
+                options_en: ["Both 1 and 2", "None of these", "Only 1", "Only 2"],
+                ans: 0,
+                exp_hi: "पांचवें गुरु अर्जुन देव जहांगीर के समकालीन थे और नौवें गुरु तेग बहादुर मुगल बादशाह औरंगजेब के समकालीन थे।",
+                exp_en: "5th Guru Arjan Dev was contemporary to Jahangir and 9th Guru Tegh Bahadur was contemporary to Mughal Emperor Aurangzeb."
+            },
+            {
+                q_hi: "गुरु नानक देव जी से जुड़े प्रमुख तिथिक्रम को कालानुक्रम व्यवस्थित कीजिए: 1. जन्म (1469) 2. आध्यात्मिक ज्ञान (1496) 3. करतारपुर में महाप्रयाण (1539)",
+                q_en: "Arrange the major chronological events associated with Guru Nanak Dev Ji: 1. Birth (1469) 2. Spiritual Enlightenment (1496) 3. Demise at Kartarpur (1539)",
+                options_hi: ["3, 2, 1", "1, 2, 3", "1, 3, 2", "2, 1, 3"],
+                options_en: ["3, 2, 1", "1, 2, 3", "1, 3, 2", "2, 1, 3"],
+                ans: 1,
+                exp_hi: "गुरु नानक जी का जन्म 1469 ई. में हुआ, 1496 में कार्तिक पूर्णिमा को आत्मज्ञान हुआ और 1539 में करतारपुर में ज्योति-जोत समाए।",
+                exp_en: "Guru Nanak Ji was born in 1469 AD, attained enlightenment in 1496, and passed away at Kartarpur in 1539 AD."
+            },
+            {
+                q_hi: "महाराजा रणजीत सिंह के सैन्य एवं राजनीतिक उत्थान के संदर्भ में कौन सही है? 1. 1798-99 ई. में वे मात्र 19 वर्ष की आयु में लाहौर के शासक बने। 2. उनके दादा चरत सिंह ने सुकरचकिया मिसल को 12 मिसलों में प्रमुख स्थान दिलाया था।",
+                q_en: "Which statements are correct regarding Maharaja Ranjit Singh's rise? 1. In 1798-99 AD, he became ruler of Lahore at age 19. 2. His grandfather Charat Singh brought Sukerchakia Misl to prominence among the 12 Misls.",
+                options_hi: ["केवल 1", "इनमें से कोई नहीं", "1 और 2 दोनों", "केवल 2"],
+                options_en: ["Only 1", "None of these", "Both 1 and 2", "Only 2"],
+                ans: 2,
+                exp_hi: "रणजीत सिंह 1798-99 में लाहौर के शासक बने और उनके दादा चरत सिंह ने सुकरचकिया मिसल को प्रभावशाली स्थिति में पहुंचाया था।",
+                exp_en: "Ranjit Singh became the ruler of Lahore in 1798-99 AD, and his grandfather Charat Singh elevated the Sukerchakia Misl to prominence."
+            },
+            {
+                q_hi: "कूका आंदोलन (नामधारी आंदोलन) द्वारा समर्थित सामाजिक सुधारों के संदर्भ में इनमें से कौन-सा विकल्प सही है?",
+                q_en: "Which option is correct regarding social reforms supported by the Kuka (Namdhari) Movement?",
+                options_hi: ["महिलाओं के मताधिकार का विरोध करना", "बहुविवाह प्रथा को कानूनी मान्यता दिलाना", "केवल ब्रिटिश वस्त्रों का समर्थन", "जाति प्रथा उन्मूलन, मद्यपान-मांसाहार का त्याग, विधवा पुनर्विवाह और पर्दा प्रथा का विरोध"],
+                options_en: ["Opposing women's suffrage", "Legalizing polygamy", "Supporting British clothes only", "Abolition of caste system, giving up alcohol/meat, widow remarriage, and opposing purdah system"],
+                ans: 3,
+                exp_hi: "कूका आंदोलन ने जातिवाद समाप्ति, नशा-मांसाहार त्याग, विधवा विवाह और नारी शिक्षा जैसे उच्च सामाजिक सुधारों को बढ़ावा दिया।",
+                exp_en: "The Kuka movement advocated social reforms including caste abolition, abstaining from liquor/meat, widow remarriage, and opposing purdah."
+            },
+            {
+                q_hi: "सिख धर्म में लंगर (निःशुल्क भोजनालय) की प्रथा का मूल आधार किस पर आधारित है?",
+                q_en: "What is the core principle behind the practice of Langar (free community kitchen) in Sikhism?",
+                options_hi: ["युद्ध के समय सैनिकों को रसद देने पर", "सामाजिक ऊंच-नीच, जाति और धर्म के भेदभाव को मिटाकर पंगत में एक साथ भोजन करने पर", "राज्य से कर वसूल कर भोजन बांटने पर", "केवल संन्यासियों को भोजन कराने पर"],
+                options_en: ["Providing rations during wartime", "Eradicating caste, class, and religion discrimination by dining together in a single row (Pangat)", "Distributing food from state tax collections", "Feeding ascetics only"],
+                ans: 1,
+                exp_hi: "गुरु नानक द्वारा स्थापित लंगर (पंगत) का उद्देश्य जाति, पंथ और सामाजिक वर्ग के भेद को मिटाकर सबको समान पंक्ति में भोजन कराना था।",
+                exp_en: "Langar (Pangat) was established to erase differences of caste, creed, and status by having everyone sit together to eat as equals."
+            },
+            {
+                q_hi: "सिख इतिहास के प्रमुख युद्धों और उनके सेनापतियों का सही मिलान कीजिए: (A) चिलियानवाला की लड़ाई (B) गुजरात की लड़ाई (C) वांडीवाश की लड़ाई | सेनापति/नेता: 1. चार्ल्स नेपियर, 2. शेर सिंह एवं गफ, 3. सर आयरकूट",
+                q_en: "Match the major battles in Sikh history with commanders: (A) Battle of Chillianwala (B) Battle of Gujrat (C) Battle of Wandiwash | Commanders: 1. Charles Napier, 2. Sher Singh & Gough, 3. Sir Eyre Coote",
+                options_hi: ["A-3, B-1, C-2", "A-2, B-3, C-1", "A-2, B-1, C-3", "A-1, B-2, C-3"],
+                options_en: ["A-3, B-1, C-2", "A-2, B-3, C-1", "A-2, B-1, C-3", "A-1, B-2, C-3"],
+                ans: 2,
+                exp_hi: "चिलियानवाला में शेर सिंह व गफ, गुजरात युद्ध में नेपियर तथा 1760 के वांडीवाश युद्ध में ब्रिटिश सेनापति सर आयरकूट थे।",
+                exp_en: "Chillianwala featured Sher Singh & Gough; Gujrat featured Napier; Wandiwash (1760) was led by Sir Eyre Coote."
+            },
+            {
+                q_hi: "अमृतसर शहर की स्थापना एवं विस्तार के संदर्भ में इनमें से कौन-सा विकल्प सही है?",
+                q_en: "Which option is correct regarding the founding and expansion of Amritsar city?",
+                options_hi: ["गुरु गोविंद सिंह ने अमृतसर नगर की नींव रखी थी।", "गुरु अंगद ने अमृतसर को पहली राजधानी बनाया।", "गुरु रामदास ने अकबर द्वारा प्रदत्त भूमि पर अमृतसर जलाशय खुदवाया और नगर बसाया।", "बंदा बहादुर ने अमृतसर का नाम बदलकर लौहगढ़ रखा था।"],
+                options_en: ["Guru Gobind Singh laid foundation of Amritsar.", "Guru Angad made Amritsar the first capital.", "Guru Ram Das dug Amritsar lake and founded city on land granted by Akbar.", "Banda Bahadur renamed Amritsar to Lohgarh."],
+                ans: 2,
+                exp_hi: "चौथे गुरु रामदास जी ने अकबर द्वारा दी गई भूमि पर अमृतसर नामक पवित्र सरोवर खुदवाया और रामदासपुर (अमृतसर) बसाया।",
+                exp_en: "4th Guru Ram Das Ji excavated the holy pool and established Ramdaspur (Amritsar) on land granted by Emperor Akbar."
+            },
+            {
+                q_hi: "1700-पूर्व खालसा पंथ की स्थापना के संदर्भ में इनमें से कौन-सा विकल्प सही है?",
+                q_en: "Which option is correct regarding the establishment of the Khalsa Panth?",
+                options_hi: ["खालसा पंथ की स्थापना लाहौर में की गई थी।", "1680 ई. में गुरु तेग बहादुर ने खालसा की स्थापना की।", "बंदा बहादुर ने 1690 ई. में खालसा सेना का गठन किया था।", "1699 ई. में वैशाखी के दिन गुरु गोविंद सिंह ने आनंदपुर साहिब में खालसा पंथ की स्थापना की।"],
+                options_en: ["Khalsa Panth was founded in Lahore.", "Guru Tegh Bahadur founded Khalsa in 1680 AD.", "Banda Bahadur formed Khalsa army in 1690 AD.", "Guru Gobind Singh founded Khalsa Panth at Anandpur Sahib on Baisakhi day in 1699 AD."],
+                ans: 3,
+                exp_hi: "दसवें गुरु गोविंद सिंह जी ने 1699 ई. में वैशाखी के पावन पर्व पर आनंदपुर साहिब में खालसा पंथ की स्थापना की थी।",
+                exp_en: "10th Guru Gobind Singh Ji established the Khalsa Panth at Anandpur Sahib on Baisakhi in 1699 AD."
+            },
+            {
+                q_hi: "कथन (A): कूका आंदोलन धार्मिक सुधार से आगे बढ़कर एक राजनीतिक विद्रोह में परिवर्तित हो गया था। कारण (R): इसका अंतिम उद्देश्य अंग्रेजों को भारत से बाहर निकालकर स्वशासन स्थापित करना बन गया था।",
+                q_en: "Assertion (A): The Kuka Movement expanded from religious reform into a political rebellion. Reason (R): Its ultimate objective became ousting the British from India to establish self-rule.",
+                options_hi: ["A ग़लत हैं किंतु R सही हैं", "A और R दोनों सही हैं और R, A का सही स्पष्टीकरण नहीं हैं", "A और R दोनों सही हैं और R, A का सही स्पष्टीकरण हैं", "A सही हैं किंतु R ग़लत हैं"],
+                options_en: ["A is false but R is true", "Both A and R are true but R is NOT correct explanation of A", "Both A and R are true and R is correct explanation of A", "A is true but R is false"],
+                ans: 2,
+                exp_hi: "कूका आंदोलन प्रारंभ में धर्म सुधार आंदोलन था, किंतु बाद में बाबा राम सिंह के नेतृत्व में अंग्रेजों को भगाने का विप्लव बना।",
+                exp_en: "The Kuka Movement began as religious reform but transformed under Baba Ram Singh into a political revolt to expel the British."
+            },
+            {
+                q_hi: "कौन-सा कथन सही है?",
+                q_en: "Which statement is correct?",
+                options_hi: ["गुरु तेग बहादुर जी का जन्म पटना में हुआ था।", "गुरु हरराय जी की मृत्यु चेचक के कारण दिल्ली में हुई थी।", "गुरु गोविंद सिंह जी को जहांगीर ने फांसी दी थी।", "गुरु हरगोविंद जी ने सिखों को सैन्य संगठन का रूप दिया तथा अकाल तख्त का निर्माण करवाया।"],
+                options_en: ["Guru Tegh Bahadur Ji was born in Patna.", "Guru Har Rai Ji died of smallpox in Delhi.", "Guru Gobind Singh Ji was executed by Jahangir.", "Guru Hargobind Ji organized Sikhs militarily and built Akal Takht."],
+                ans: 3,
+                exp_hi: "छठे गुरु हरगोविंद जी ने सिख समुदाय को सैन्य स्वरूप दिया, दो तलवारें धारण कीं और अकाल तख्त (ईश्वर का सिंहासन) बनवाया।",
+                exp_en: "6th Guru Hargobind Ji organized Sikhs into a military force, wore two swords (Miri & Piri), and built the Akal Takht."
+            },
+            {
+                q_hi: "कथन (A): 1849 में पंजाब के विलय के पश्चात प्रसिद्ध कोहिनूर हीरा ब्रिटिश महारानी विक्टोरिया को भेज दिया गया। कारण (R): लॉर्ड डलहौजी ने लाहौर राजकोष पर अधिकार कर अल्पवयस्क दलीप सिंह को इंग्लैंड निर्वासित कर दिया था।",
+                q_en: "Assertion (A): After annexation of Punjab in 1849, the Koh-i-Noor diamond was sent to Queen Victoria. Reason (R): Lord Dalhousie confiscated Lahore treasury and exiled minor Duleep Singh to England.",
+                options_hi: ["A सही हैं किंतु R ग़लत हैं", "A ग़लत हैं किंतु R सही हैं", "A और R दोनों सही हैं और R, A का सही स्पष्टीकरण नहीं हैं", "A और R दोनों सही हैं और R, A का सही स्पष्टीकरण हैं"],
+                options_en: ["A is true but R is false", "A is false but R is true", "Both A and R are true but R is NOT correct explanation of A", "Both A and R are true and R is correct explanation of A"],
+                ans: 3,
+                exp_hi: "पंजाब विलय के बाद डलहौजी ने लाहौर का प्रसिद्ध कोहिनूर हीरा महारानी विक्टोरिया को भेजा और दलीप सिंह को इंग्लैंड भेज दिया।",
+                exp_en: "Following Punjab's annexation, Dalhousie seized the royal treasury, dispatched Koh-i-Noor to Queen Victoria, and exiled Duleep Singh."
+            },
+            {
+                q_hi: "गुरु गोविंद सिंह जी द्वारा अनिवार्य किए गए पांच 'ककार' के संदर्भ में इनमें से कौन-सा विकल्प सही है?",
+                q_en: "Which option is correct regarding the 5 Kakkars made mandatory by Guru Gobind Singh Ji?",
+                options_hi: ["प्रत्येक सिख हेतु केवल तलवार और पगड़ी रखना अनिवार्य था।", "केवल सैन्य अधिकारियों के लिए अस्त्र-शस्त्र की अनुमति थी।", "प्रत्येक सिख हेतु केश, कंघा, कृपाण, कच्छा और कड़ा धारण करना अनिवार्य किया गया।", "इसमें केश और कंघा का पूर्ण निषेध किया गया था।"],
+                options_en: ["Only sword and turban were compulsory.", "Weapons were allowed only for military officers.", "Compulsory to wear Kesh, Kangha, Kirpan, Kachera, and Kada for every Sikh.", "Kesh and Kangha were strictly prohibited."],
+                ans: 2,
+                exp_hi: "गुरु गोविंद सिंह जी ने प्रत्येक खालसा सिख हेतु पांच ककार-केश, कंघा, कृपाण, कच्छा और कड़ा रखना अनिवार्य किया था।",
+                exp_en: "Guru Gobind Singh Ji made 5 Ks (Kesh, Kangha, Kirpan, Kachera, Kada) mandatory for every Khalsa Sikh."
+            },
+            {
+                q_hi: "बंदा बहादुर के राजनीतिक एवं सैन्य अभियानों का सही क्रम कौन-सा है?",
+                q_en: "Which is the correct sequence of Banda Bahadur's political and military campaigns?",
+                options_hi: ["वजीर खाँ की हत्या → 1716 में शहादत → लौहगढ़ को राजधानी बनाना → दल खालसा का गठन", "दल खालसा का गठन → लौहगढ़ की स्थापना → वजीर खाँ की हत्या → 1716 में शहादत", "लौहगढ़ को राजधानी बनाना → 1716 में शहादत → वजीर खाँ की हत्या → अमृतसर संधि", "पंजाब में सिख राज्य की स्थापना का प्रयास → लौहगढ़ को राजधानी बनाना → वजीर खाँ की हत्या → 1716 ई. में शहादत"],
+                options_en: ["Killing of Wazir Khan → Martyrdom 1716 → Lohgarh Capital → Dal Khalsa", "Dal Khalsa → Lohgarh → Wazir Khan → Martyrdom 1716", "Lohgarh Capital → Martyrdom 1716 → Wazir Khan → Amritsar Treaty", "Effort for Sikh Rule → Lohgarh as Capital → Killing Wazir Khan → Martyrdom in 1716 AD"],
+                ans: 3,
+                exp_hi: "बंदा बहादुर ने सिख राज्य का लक्ष्य रख लौहगढ़ को राजधानी बनाया, वजीर खाँ को मारा और 1716 में फर्रुखसियर काल में शहीद हुए।",
+                exp_en: "Banda Bahadur aimed for sovereign rule, established Lohgarh capital, defeated Wazir Khan, and attained martyrdom in 1716 AD."
+            },
+            {
+                q_hi: "सिख गुरुओं और उनकी उपाधियों/पहचान का सही मिलान पहचानिए: (i) गुरु गोविंद सिंह -> सच्चा पादशाह (ii) गुरु हरगोविंद -> दो तलवारें धारण करने वाले मीरी-पीरी के गुरु",
+                q_en: "Identify correct match of Sikh Gurus and titles: (i) Guru Gobind Singh -> Saccha Padshah (ii) Guru Hargobind -> Miri-Piri Guru wearing two swords",
+                options_hi: ["केवल 1", "1 और 2 दोनों", "केवल 2", "इनमें से कोई नहीं"],
+                options_en: ["Only 1", "Both 1 and 2", "Only 2", "None of these"],
+                ans: 1,
+                exp_hi: "गुरु गोविंद सिंह जी ने स्वयं को 'सच्चा पादशाह' कहा और छठे गुरु हरगोविंद जी ने आध्यात्मिक व सांसारिक शक्ति की दो तलवारें लीं।",
+                exp_en: "Guru Gobind Singh Ji was termed 'Saccha Padshah' and 6th Guru Hargobind Ji donned two swords representing spiritual (Piri) and temporal (Miri) powers."
+            },
+            {
+                q_hi: "निम्न में से कौन-सा युग्म सही है?",
+                q_en: "Which of the following pairs is correctly matched?",
+                options_hi: ["गुरु हरगोविंद — लवन विवाह पद्धति का प्रवर्तन", "गुरु अंगद — गुरुमुखी लिपि का आरंभ", "गुरु अर्जुन देव — खालसा पंथ की स्थापना", "गुरु अमरदास — अकाल तख्त का निर्माण"],
+                options_en: ["Guru Hargobind — Lavan Marriage System", "Guru Angad — Origin of Gurmukhi Script", "Guru Arjan Dev — Khalsa Panth founding", "Guru Amar Das — Akal Takht construction"],
+                ans: 1,
+                exp_hi: "सिखों के दूसरे गुरु अंगद देव जी (लहना) ने गुरुमुखी लिपि का आरंभ किया तथा लंगर व्यवस्था को स्थायी रूप प्रदान किया।",
+                exp_en: "2nd Guru, Guru Angad Dev Ji (Bhai Lehna), standardized and introduced the Gurmukhi script."
+            },
+            {
+                q_hi: "आंग्ल-सिख संधियों एवं उनकी तिथियों के संदर्भ में कौन-सा युग्म असुमेलित है?",
+                q_en: "Which pair is incorrectly matched regarding Anglo-Sikh treaties and dates?",
+                options_hi: ["लाहौर की संधि — 9 मार्च, 1846 ई.", "भैरोंवाल की संधि — 22 दिसंबर, 1846 ई.", "अमृतसर की संधि — 25 अप्रैल, 1809 ई.", "पंजाब का विलय — 20 अगस्त, 1847 ई."],
+                options_en: ["Treaty of Lahore — 9 March 1846 AD", "Treaty of Bhyrowal — 22 December 1846 AD", "Treaty of Amritsar — 25 April 1809 AD", "Annexation of Punjab — 20 August 1847 AD"],
+                ans: 3,
+                exp_hi: "डलहौजी द्वारा संपूर्ण पंजाब का विलय 29 मार्च, 1849 को किया गया था। 1847 में महारानी जिंदा को शेखपुरा भेजा गया था।",
+                exp_en: "Punjab annexation took place on 29 March 1849 under Dalhousie, making 20 August 1847 incorrect."
+            },
+            {
+                q_hi: "आंग्ल-सिख संबंधों की प्रमुख घटनाओं को कालानुक्रम (प्राचीन से नवीन) व्यवस्थित कीजिए: 1. अमृतसर की संधि 2. प्रथम आंग्ल-सिख युद्ध 3. लाहौर की संधि 4. पंजाब का पूर्ण विलय",
+                q_en: "Arrange major events in Anglo-Sikh relations chronologically: 1. Treaty of Amritsar 2. First Anglo-Sikh War 3. Treaty of Lahore 4. Complete Annexation of Punjab",
+                options_hi: ["4, 3, 2, 1", "2, 1, 3, 4", "1, 3, 2, 4", "1, 2, 3, 4"],
+                options_en: ["4, 3, 2, 1", "2, 1, 3, 4", "1, 3, 2, 4", "1, 2, 3, 4"],
+                ans: 3,
+                exp_hi: "अमृतसर की संधि 1809, प्रथम आंग्ल-सिख युद्ध 1845-46, लाहौर की संधि मार्च 1846 तथा पंजाब का विलय मार्च 1849 में हुआ था।",
+                exp_en: "Treaty of Amritsar (1809) -> 1st Anglo-Sikh War (1845-46) -> Treaty of Lahore (March 1846) -> Annexation of Punjab (March 1849)."
+            },
+            {
+                q_hi: "गुरु नानक देव जी द्वारा स्थापित 'संगत और पंगत' संस्था का प्राथमिक उद्देश्य किस पर आधारित था?",
+                q_en: "What was the primary purpose of 'Sangat and Pangat' established by Guru Nanak Dev Ji?",
+                options_hi: ["मुगलों के विरुद्ध सैन्य सेना तैयार करने पर", "समानता, भ्रातृभाव और प्रतिदिन एकत्र होकर आध्यात्मिक चर्चा एवं भोजन साझा करने पर", "व्यापारिक लाभ हेतु कर संग्रह करने पर", "केवल उच्च वर्गीय शिष्यों को शिक्षा देने पर"],
+                options_en: ["Preparing military army against Mughals", "Promoting equality, fraternity, daily spiritual discourse and sharing food", "Collecting commercial tax for profit", "Imparting education only to upper-class disciples"],
+                ans: 1,
+                exp_hi: "संगत (धर्मशाला में मिलन) और पंगत (लंगर में एक साथ भोजन) ने जाति-पांति मिटाकर समानता और भ्रातृत्व की ठोस संस्था बनाई।",
+                exp_en: "Sangat (religious congregation) and Pangat (communal dining) promoted equality and brotherhood breaking caste barriers."
+            },
+            {
+                q_hi: "1870 के दशक के सिख सुधारों के संदर्भ में इनमें से कौन-सा विकल्प सही है?",
+                q_en: "Which option is correct regarding Sikh reform movements during the 1870s?",
+                options_hi: ["1870 में नामधारी आंदोलन पूरी तरह समाप्त हो गया था।", "सिंह सभा ने अंग्रेजी शिक्षा का पूर्ण बहिष्कार किया था।", "1879 में लाहौर में सिंह सभा की स्थापना की गई थी।", "1873 में अकाल तख्त को नष्ट कर दिया गया था।"],
+                options_en: ["Namdhari movement ended completely in 1870.", "Singh Sabha completely boycotted English education.", "Singh Sabha branch was established at Lahore in 1879.", "Akal Takht was destroyed in 1873."],
+                ans: 2,
+                exp_hi: "अमृतसर में 1873 की सिंह सभा की सफलता के बाद 1879 में लाहौर में भी सिंह सभा की एक सक्रिय शाखा स्थापित की गई थी।",
+                exp_en: "Following the founding of Singh Sabha at Amritsar in 1873, a major branch was established in Lahore in 1879."
+            },
+            {
+                q_hi: "गुरु पद की समाप्ति और गुरु ग्रंथ साहिब के संदर्भ में कौन सही है? 1. गुरु गोविंद सिंह जी ने घोषणा की कि उनके बाद 'गुरुवाणी' ही सिखों के गुरु का कार्य करेगी। 2. गुरु गोविंद सिंह जी की मृत्यु 1708 ई. में नांदेड़ में एक पठान द्वारा किए गए हमले के बाद हुई।",
+                q_en: "Which statements are correct regarding ending human Guruship and Guru Granth Sahib? 1. Guru Gobind Singh announced that Gurbani/Guru Granth Sahib would be eternal Guru. 2. He passed away in 1708 at Nanded following an attack by a Pathan.",
+                options_hi: ["इनमें से कोई नहीं", "1 और 2 दोनों", "केवल 1", "केवल 2"],
+                options_en: ["None of these", "Both 1 and 2", "Only 1", "Only 2"],
+                ans: 1,
+                exp_hi: "गुरु गोविंद सिंह जी ने देहधारी गुरु परंपरा समाप्त कर गुरुग्रंथ साहिब को गुरु माना; 1708 में नांदेड़ में वे ज्योति-जोत समाए।",
+                exp_en: "Guru Gobind Singh ended living Guruship designating Guru Granth Sahib as perpetual Guru, and passed away at Nanded in 1708."
+            },
+            {
+                q_hi: "1873 में अमृतसर में प्रारंभ हुए सिंह सभा आंदोलन का मूल उद्देश्य किस पर आधारित था?",
+                q_en: "What was the fundamental aim of the Singh Sabha Movement started in Amritsar in 1873?",
+                options_hi: ["अंग्रेजों के विरुद्ध सशस्त्र छापामार युद्ध छेड़ना", "सिख धर्म में व्याप्त अंधविश्वास, जाति-भेदभाव दूर करना और सिख धर्म की प्रतिष्ठा पुनः स्थापित करना", "पंजाब में अलग खालिस्तान राज्य का निर्माण करना", "लाहौर दरबार के मंत्रियों को अपदस्थ करना"],
+                options_en: ["Wage guerrilla war against British", "Eradicate superstitions, caste discrimination and restore Sikhism's true glory", "Establish separate Khalistan state in Punjab", "Depose ministers of Lahore Durbar"],
+                ans: 1,
+                exp_hi: "1873 में अमृतसर में शुरू हुई सिंह सभा का उद्देश्य सिख धर्म से कुरीतियां दूर कर उसकी गौरवशाली प्रतिष्ठा को बहाल करना था।",
+                exp_en: "Singh Sabha (1873) aimed to eliminate superstitious customs, reform Sikh society, and restore authentic Sikh traditions."
+            },
+            {
+                q_hi: "1846 की भैरोंवाल की संधि के प्रमुख प्रावधान के संदर्भ में इनमें से कौन-सा विकल्प सही है?",
+                q_en: "Which option is correct regarding key terms of the Treaty of Bhyrowal (1846)?",
+                options_hi: ["कोहिनूर हीरा तत्काल महारानी विक्टोरिया को सौंप दिया गया।", "सिख सेना को पूरी तरह भंग कर दिया गया।", "अल्पवयस्क राजा दलीप सिंह के संरक्षण हेतु ब्रिटिश सेना का पंजाब में प्रवास स्वीकार किया गया।", "पंजाब का पूर्ण विलय ब्रिटिश साम्राज्य में कर दिया गया।"],
+                options_en: ["Koh-i-Noor immediately handed to Victoria.", "Sikh army completely disbanded.", "British troop presence in Punjab accepted to protect minor King Duleep Singh.", "Complete annexation of Punjab into British Empire."],
+                ans: 2,
+                exp_hi: "22 दिसंबर 1846 की भैरोंवाल संधि के अनुसार राजा दलीप सिंह के वयस्क होने तक ब्रिटिश सेना का पंजाब में रहना तय हुआ।",
+                exp_en: "Treaty of Bhyrowal (Dec 1846) sanctioned British troops to remain in Punjab during minority of King Duleep Singh."
+            },
+            {
+                q_hi: "सिख धर्म के प्रथम चार गुरुओं के कालानुक्रमिक नेतृत्व का सही क्रम कौन-सा है?",
+                q_en: "What is the correct chronological sequence of the first 4 Sikh Gurus?",
+                options_hi: ["गुरु नानक → गुरु अमरदास → गुरु अंगद → गुरु रामदास", "गुरु अंगद → गुरु नानक → गुरु रामदास → गुरु अमरदास", "गुरु नानक → गुरु अंगद → गुरु अमरदास → गुरु रामदास", "गुरु अमरदास → गुरु नानक → गुरु अंगद → गुरु रामदास"],
+                options_en: ["Guru Nanak → Guru Amar Das → Guru Angad → Guru Ram Das", "Guru Angad → Guru Nanak → Guru Ram Das → Guru Amar Das", "Guru Nanak → Guru Angad → Guru Amar Das → Guru Ram Das", "Guru Amar Das → Guru Nanak → Guru Angad → Guru Ram Das"],
+                ans: 2,
+                exp_hi: "सिख धर्म की स्थापना गुरु नानक ने की, जिनके बाद क्रमशः गुरु अंगद (लहना), गुरु अमरदास और गुरु रामदास सिख गुरु बने।",
+                exp_en: "Correct order: 1st Guru Nanak -> 2nd Guru Angad -> 3rd Guru Amar Das -> 4th Guru Ram Das."
+            },
+            {
+                q_hi: "गुरु गोविंद सिंह जी के नाम के अंत में सभी पुरुषों को क्या उपाधि/शब्द जोड़ने का आदेश दिया गया था?",
+                q_en: "What suffix title was ordained by Guru Gobind Singh Ji for all male Sikhs to attach to their name?",
+                options_hi: ["सिंह", "दास", "बहादुर", "कौर"],
+                options_en: ["Singh", "Das", "Bahadur", "Kaur"],
+                ans: 0,
+                exp_hi: "दसवें गुरु गोविंद सिंह जी ने खालसा सिखों के आत्मसम्मान हेतु पुरुषों को 'सिंह' और महिलाओं को 'कौर' लगाने का निर्देश दिया।",
+                exp_en: "Guru Gobind Singh Ji instructed all Sikh men to adopt 'Singh' (Lion) and women 'Kaur' (Princess)."
+            },
+            {
+                q_hi: "कथन (A): बंदा बहादुर ने सरहिंद के मुगल फौजदार वजीर खाँ को मार डाला। कारण (R): वजीर खाँ ने गुरु गोविंद सिंह जी के दो मासूम पुत्रों को जीवित दीवार में चिनवा दिया था।",
+                q_en: "Assertion (A): Banda Bahadur executed Mughal Governor Wazir Khan of Sirhind. Reason (R): Wazir Khan had bricked alive two young sons of Guru Gobind Singh Ji.",
+                options_hi: ["(A) और (R) दोनों सही हैं, परंतु (R), (A) की सही व्याख्या नहीं करता है।", "(A) और (R) दोनों सही हैं तथा (R), (A) की सही व्याख्या करता है।", "(A) सही है, परंतु (R) गलत है।", "(A) गलत है, परंतु (R) सही है।"],
+                options_en: ["Both A and R true, but R NOT correct explanation", "Both A and R true and R is correct explanation", "A is true but R is false", "A is false but R is true"],
+                ans: 1,
+                exp_hi: "साहिबजादा जोरावर सिंह व फतेह सिंह को दीवार में चिनवाने वाले सरहिंद के अत्याचारी फौजदार वजीर खाँ को बंदा बहादुर ने मारा।",
+                exp_en: "Banda Bahadur defeated Wazir Khan to avenge the martyrdom of younger Sahibzadas Zorawar Singh and Fateh Singh."
+            },
+            {
+                q_hi: "कथन (A): लॉर्ड डलहौजी ने 29 मार्च, 1849 को घोषणा कर संपूर्ण पंजाब का अंग्रेजी राज्य में विलय कर लिया। कारण (R): द्वितीय आंग्ल-सिख युद्ध के दौरान चिलियानवाला और गुजरात की लड़ाई में सिख सेना निर्णायक रूप से पराजित हुई थी।",
+                q_en: "Assertion (A): Lord Dalhousie annexed entire Punjab on 29 March 1849. Reason (R): Sikh forces were decisively defeated at Chillianwala and Gujrat during 2nd Anglo-Sikh War.",
+                options_hi: ["(A) गलत है, परंतु (R) सही है।", "(A) और (R) दोनों सही हैं, परंतु (R), (A) की सही व्याख्या नहीं करता है।", "(A) सही है, परंतु (R) गलत है।", "(A) और (R) दोनों सही हैं तथा (R), (A) की सही व्याख्या करता है।"],
+                options_en: ["A is false, R is true", "Both A and R true, but R NOT correct explanation", "A is true, R is false", "Both A and R true and R is correct explanation"],
+                ans: 3,
+                exp_hi: "द्वितीय आंग्ल-सिख युद्ध में 1849 की गुजरात लड़ाई में सिखों की निर्णायक पराजय के बाद डलहौजी ने पंजाब का विलय ब्रिटिश राज में किया।",
+                exp_en: "Decisive defeat of Sikhs in 2nd Anglo-Sikh War led Dalhousie to officially annex Punjab on March 29, 1849."
+            },
+            {
+                q_hi: "1850-पूर्व आंग्ल-सिख युद्धों के संदर्भ में इनमें से कौन-सा विकल्प सही है?",
+                q_en: "Which option is correct regarding Anglo-Sikh wars pre-1850?",
+                options_hi: ["द्वितीय आंग्ल-सिख युद्ध में रणजीत सिंह ने स्वयं कमान संभाली थी।", "21 फरवरी, 1849 को चिनाब नदी के किनारे चार्ल्स नेपियर के नेतृत्व में गुजरात की लड़ाई लड़ी गई जिसमें सिख पराजित हुए।", "प्रथम आंग्ल-सिख युद्ध में सिखों ने अंग्रेजों को पूर्णतः निष्कासित कर दिया था।", "गुजरात का युद्ध गंगा नदी के तट पर लड़ा गया था।"],
+                options_en: ["Ranjit Singh commanded 2nd Anglo-Sikh War.", "Battle of Gujrat fought on Feb 21, 1849 on Chenab banks under Napier where Sikhs lost.", "Sikhs expelled British in 1st Anglo-Sikh War.", "Battle of Gujrat fought on Ganges banks."],
+                ans: 1,
+                exp_hi: "द्वितीय आंग्ल-सिख युद्ध की अंतिम तोपों की लड़ाई 'गुजरात का युद्ध' चिनाब किनारे नेपियर के नेतृत्व में लड़ी गई थी।",
+                exp_en: "Battle of Gujrat (Battle of Guns) took place near River Chenab on Feb 21, 1849 resulting in Sikh defeat."
+            },
+            {
+                q_hi: "बंदा बहादुर के संदर्भ में कौन सही है? 1. इन्होंने गुरु नानक और गुरु गोविंद सिंह के नाम के सिक्के चलवाए। 2. मुगल बादशाह फर्रुखसियर के आदेश पर 1716 ई. में इन्हें गुरदासपुर नांगल में पकड़कर मृत्युदंड दिया गया।",
+                q_en: "Which are correct regarding Banda Bahadur? 1. Issued coins bearing names of Guru Nanak and Guru Gobind Singh. 2. Captured at Gurdaspur Nangal and executed in 1716 by order of Mughal Emperor Farrukhsiyar.",
+                options_hi: ["केवल 2", "केवल 1", "1 और 2 दोनों", "इनमें से कोई नहीं"],
+                options_en: ["Only 2", "Only 1", "Both 1 and 2", "None of these"],
+                ans: 2,
+                exp_hi: "बंदा बहादुर ने गुरुओं के नाम पर सिक्के जारी किए और फर्रुखसियर के शासनकाल में 1716 में गुरदासपुर नांगल में शहीद किए गए।",
+                exp_en: "Banda Bahadur struck coins in the name of Sikh Gurus and was executed in Delhi in 1716 under Farrukhsiyar's rule."
+            },
+            {
+                q_hi: "सिख गुरु परंपरा में गुरु पद को पैतृक बनाने की शुरुआत करने वाले गुरु कौन थे?",
+                q_en: "Who was the Sikh Guru who made the institution of Guruship hereditary?",
+                options_hi: ["गुरु अंगद", "गुरु अमरदास", "गुरु रामदास", "गुरु हरगोविंद"],
+                options_en: ["Guru Angad", "Guru Amar Das", "Guru Ram Das", "Guru Hargobind"],
+                ans: 2,
+                exp_hi: "चौथे गुरु रामदास जी ने अपने तीसरे पुत्र अर्जुन देव को गुरु पद सौंपकर सिख परंपरा में गुरु पद को पैतृक बनाया था।",
+                exp_en: "4th Guru Ram Das Ji appointed his youngest son Arjan Dev as successor, initiating hereditary Guruship."
+            },
+            {
+                q_hi: "निम्नलिखित में से कौन-सा युग्म गलत है?",
+                q_en: "Which of the following pairs is incorrect?",
+                options_hi: ["राम सिंह कूका की मृत्यु — मांडले जेल (1895 ई.)", "महाराजा रणजीत सिंह की मृत्यु — 1839 ई.", "द्वितीय आंग्ल-सिख युद्ध — 1849 ई.", "प्रथम आंग्ल-सिख युद्ध — 1845-46 ई."],
+                options_en: ["Death of Ram Singh Kuka — Mandalay Jail (1895 AD)", "Death of Maharaja Ranjit Singh — 1839 AD", "Second Anglo-Sikh War — 1849 AD", "First Anglo-Sikh War — 1845-46 AD"],
+                ans: 0,
+                exp_hi: "बाबा राम सिंह कूका को आजीवन कारावास देकर बर्मा की मांडले जेल भेजा गया था, जहाँ 1885 ई. में उनका देहांत हुआ।",
+                exp_en: "Baba Ram Singh passed away in Mandalay exile in 1885 AD, making 1895 incorrect."
+            },
+            {
+                q_hi: "सिख गुरुओं में से बाल्यावस्था में ही गुरु पद प्राप्त करने तथा चेचक से असमय मृत्यु का वरण करने वाले एकमात्र गुरु कौन थे?",
+                q_en: "Who was the only Sikh Guru who attained Guruship in childhood and died prematurely of smallpox?",
+                options_hi: ["गुरु तेग बहादुर जी", "गुरु हरकिशन जी", "गुरु अर्जुन देव जी", "गुरु हरराय जी"],
+                options_en: ["Guru Tegh Bahadur Ji", "Guru Harkrishan Ji", "Guru Arjan Dev Ji", "Guru Har Rai Ji"],
+                ans: 1,
+                exp_hi: "आठवें गुरु हरकिशन जी बाल्यकाल में गुरु बने, उन्होंने दिल्ली में चेचक पीड़ितों की सेवा की और स्वयं चेचक से ज्योति-जोत समाए।",
+                exp_en: "8th Guru Harkrishan Ji became Guru at age 5, served smallpox victims in Delhi, and contracted it himself, passing away young."
+            },
+            {
+                q_hi: "सिख धर्म के पांचवें से आठवें गुरुओं को कालानुक्रम (प्राचीन से नवीन) व्यवस्थित कीजिए: 1. गुरु अर्जुन देव 2. गुरु हरगोविंद 3. गुरु हरराय 4. गुरु हरकिशन",
+                q_en: "Arrange the 5th to 8th Sikh Gurus chronologically: 1. Guru Arjan Dev 2. Guru Hargobind 3. Guru Har Rai 4. Guru Harkrishan",
+                options_hi: ["2, 1, 4, 3", "4, 3, 2, 1", "1, 2, 3, 4", "1, 3, 2, 4"],
+                options_en: ["2, 1, 4, 3", "4, 3, 2, 1", "1, 2, 3, 4", "1, 3, 2, 4"],
+                ans: 2,
+                exp_hi: "सिख परंपरा में पांचवें गुरु अर्जुन देव, छठे गुरु हरगोविंद, सातवें गुरु हरराय तथा आठवें गुरु हरकिशन जी हुए।",
+                exp_en: "Chronological order: 5th Arjan Dev -> 6th Hargobind -> 7th Har Rai -> 8th Harkrishan."
+            },
+            {
+                q_hi: "सिख धार्मिक सुधार आंदोलनों और उनके प्रवर्तकों का सही मिलान पहचानिए: (i) कूका आंदोलन -> भगत जवाहर मल (सियां साहब) एवं बालक सिंह (ii) नामधारी आंदोलन का प्रसार -> बाबा राम सिंह",
+                q_en: "Match reform movements with founders: (i) Kuka Movement -> Bhagat Jawahar Mal & Balak Singh (ii) Spread of Namdhari Movement -> Baba Ram Singh",
+                options_hi: ["इनमें से कोई नहीं", "1 और 2 दोनों", "केवल 2", "केवल 1"],
+                options_en: ["None of these", "Both 1 and 2", "Only 2", "Only 1"],
+                ans: 1,
+                exp_hi: "कूका आंदोलन की शुरुआत भगत जवाहर मल व बालक सिंह ने 1840 में की तथा बाबा राम सिंह ने इसे नामधारी आंदोलन के रूप में बढ़ाया।",
+                exp_en: "Kuka movement was initiated by Jawahar Mal and Balak Singh, and popularized widely by Baba Ram Singh."
+            },
+            {
+                q_hi: "गुरु हरकिशन जी के जीवन से संबंधित कौन-सा कथन सही है?",
+                q_en: "Which statement regarding Guru Harkrishan Ji's life is correct?",
+                options_hi: ["इन्हें दिल्ली जाकर मुगल बादशाह औरंगजेब को गुरुपद के विषय में समझाना पड़ा था।", "इन्होंने अमृतसर की किलेबंदी करवाई थी।", "इन्होंने जहांगीर को युद्ध में पराजित किया था।", "इन्होंने जफरनामा की रचना की थी।"],
+                options_en: ["He visited Delhi to clarify Guruship controversy to Emperor Aurangzeb.", "He fortified Amritsar city.", "He defeated Jahangir in battle.", "He composed Zafarnama."],
+                ans: 0,
+                exp_hi: "आठवें गुरु हरकिशन जी को उनके बड़े भाई रामराय के विवाद के कारण दिल्ली जाकर औरंगजेब को गुरुपद की स्थिति स्पष्ट करनी पड़ी थी।",
+                exp_en: "Guru Harkrishan Ji visited Delhi upon summons to clarify succession disputes raised by his elder brother Ram Rai."
+            },
+            {
+                q_hi: "निम्नलिखित में से कौन-सा युग्म गलत है?",
+                q_en: "Which of the following pairs is incorrect?",
+                options_hi: ["बंदा बहादुर के पिता — रामदेव भारद्वाज", "अमृतसर की संधि — लॉर्ड डलहौजी", "सुकरचकिया मिसल की प्रतिष्ठा — चरत सिंह", "दल खालसा का नेतृत्व — जस्सा सिंह आहलूवालिया"],
+                options_en: ["Banda Bahadur's father — Ramdev Bhardwaj", "Treaty of Amritsar — Lord Dalhousie", "Prominence of Sukerchakia Misl — Charat Singh", "Leadership of Dal Khalsa — Jassa Singh Ahluwalia"],
+                ans: 1,
+                exp_hi: "1809 की अमृतसर की संधि रणजीत सिंह और चार्ल्स मेटकाफ (लॉर्ड मिंटो प्रथम के दूत) के मध्य हुई थी, डलहौजी के समय नहीं।",
+                exp_en: "Treaty of Amritsar (1809) was signed between Ranjit Singh and Charles Metcalfe (Lord Minto I), not Dalhousie."
+            },
+            {
+                q_hi: "निम्नलिखित में से कौन-सा क्रम सिख मिसलों के एकीकरण एवं सत्ता विस्तार से सबसे अधिक संबंधित है?",
+                q_en: "Which sequence correctly reflects the unification and power expansion of Sikh Misls?",
+                options_hi: ["नवाब कपूर सिंह द्वारा दल खालसा की पहल (1748) → 12 मिसलों में विभाजन → सुकरचकिया मिसल का उत्कर्ष", "रणजीत सिंह का जन्म → दल खालसा का गठन → नवाब कपूर सिंह का आगमन", "सुकरचकिया मिसल का उत्कर्ष → 12 मिसलों का गठन → दल खालसा की समाप्ति", "अमृतसर संधि → दल खालसा का गठन → 12 मिसलों में विभाजन"],
+                options_en: ["Dal Khalsa initiative by Nawab Kapur Singh (1748) → Division into 12 Misls → Rise of Sukerchakia Misl", "Birth of Ranjit Singh → Dal Khalsa → Arrival of Kapur Singh", "Rise of Sukerchakia Misl → 12 Misls → Dissolution of Dal Khalsa", "Treaty of Amritsar → Dal Khalsa → Division into 12 Misls"],
+                ans: 0,
+                exp_hi: "1748 में नवाब कपूर सिंह की पहल पर दल खालसा बना, जो 12 मिसलों में बटा और आगे चलकर सुकरचकिया मिसल सबसे शक्तिशाली बनी।",
+                exp_en: "Nawab Kapur Singh organized Dal Khalsa in 1748, which consolidated into 12 Misls leading to Sukerchakia Misl's rise."
+            },
+            {
+                q_hi: "गुरु नानक देव जी की जीवन यात्रा की घटनाओं का सही क्रम कौन-सा है?",
+                q_en: "What is the correct sequence of events in Guru Nanak Dev Ji's life?",
+                options_hi: ["जन्म → करतारपुर महाप्रयाण → लंगर स्थापना → आध्यात्मिक ज्ञान", "करतारपुर में महाप्रयाण → आध्यात्मिक ज्ञान → लंगर व्यवस्था → जन्म", "लंगर व्यवस्था → जन्म → आध्यात्मिक ज्ञान → महाप्रयाण", "ननकाना साहिब में जन्म (1469) → आध्यात्मिक पुनर्जीवन (1496) → लंगर एवं संगत की स्थापना → करतारपुर में महाप्रयाण (1539)"],
+                options_en: ["Birth → Kartarpur Demise → Langar → Enlightenment", "Kartarpur Demise → Enlightenment → Langar → Birth", "Langar → Birth → Enlightenment → Demise", "Birth at Nankana Sahib (1469) → Enlightenment (1496) → Sangat & Pangat → Demise at Kartarpur (1539)"],
+                ans: 3,
+                exp_hi: "गुरु नानक जी का जन्म 1469 में हुआ, 1496 में बोध हुआ, लंगर-संगत की नींव रखी और 1539 में करतारपुर में ज्योति-जोत समाए।",
+                exp_en: "Birth (1469) -> Enlightenment (1496) -> Founding Sangat/Pangat -> Passing away at Kartarpur (1539)."
+            },
+            {
+                q_hi: "गुरु अर्जुन देव जी के जीवन एवं कार्यों से संबंधित कौन-सा कथन सही है?",
+                q_en: "Which statement regarding Guru Arjan Dev Ji's life and contributions is correct?",
+                options_hi: ["इन्होंने दो तलवारें धारण कर नगाड़ा बजाने की परंपरा शुरू की।", "इन्होंने बंदा बहादुर को सैन्य कमान सौंपी थी।", "इन्होंने खालसा पंथ की स्थापना 1699 ई. में की थी।", "इन्होंने आदि ग्रंथ का संकलन किया तथा अमृतसर जलाशय के मध्य हरमंदर साहब का निर्माण करवाया।"],
+                options_en: ["He started wearing two swords and beating war drums.", "He gave military command to Banda Bahadur.", "He established Khalsa Panth in 1699 AD.", "He compiled Adi Granth and constructed Harmandir Sahib in Amritsar pool."],
+                ans: 3,
+                exp_hi: "गुरु अर्जुन देव जी ने 1604 में आदि ग्रंथ का संकलन किया और अमृतसर के जलाशय के बीच हरमंदर साहब का निर्माण पूरा कराया।",
+                exp_en: "5th Guru Arjan Dev Ji compiled the Adi Granth (1604) and built Sri Harmandir Sahib in Amritsar."
+            },
+            {
+                q_hi: "सिख गुरुओं और उनके शहादत / मृत्यु स्थलों के संदर्भ में कौन-सा युग्म असुमेलित है?",
+                q_en: "Which pair regarding Sikh Gurus and their martyrdom/demise sites is incorrect?",
+                options_hi: ["गुरु अर्जुन देव — पटना", "गुरु तेग बहादुर — दिल्ली", "गुरु गोविंद सिंह — नांदेड़", "गुरु नानक — करतारपुर"],
+                options_en: ["Guru Arjan Dev — Patna", "Guru Tegh Bahadur — Delhi", "Guru Gobind Singh — Nanded", "Guru Nanak — Kartarpur"],
+                ans: 0,
+                exp_hi: "पांचवें गुरु अर्जुन देव जी को जहांगीर के आदेश पर लाहौर में शहीद किया गया था, पटना में दसवें गुरु जी का जन्म हुआ था।",
+                exp_en: "Guru Arjan Dev Ji was martyred at Lahore; Patna was the birthplace of Guru Gobind Singh Ji."
+            },
+            {
+                q_hi: "पाहुल प्रणाली (दीक्षा संस्कार), जिसकी शुरुआत गुरु गोविंद सिंह जी ने की थी, किस पर आधारित थी?",
+                q_en: "What was the core principle of Pahul (initiation ritual) introduced by Guru Gobind Singh Ji?",
+                options_hi: ["व्यापारिक कर एकत्र करने की रसीद पर", "सर्वजातीय बंधुत्व और खालसा में समानता लाने हेतु अमृत छकाने की परंपरा पर", "मुगल दरबार में सेवा देने के अनुबंध पर", "केवल ब्राह्मणों को सिख बनाने की दीक्षा पर"],
+                options_en: ["Commercial tax collection receipt", "Partaking Amrit to establish universal brotherhood and complete equality in Khalsa", "Contract for Mughal court service", "Initiation restricted to Brahmins only"],
+                ans: 1,
+                exp_hi: "पाहुल प्रणाली द्वारा गुरु गोविंद सिंह जी ने सभी जातियों के लोगों को एक ही पात्र में अमृत छकाकर खालसा में दीक्षित किया।",
+                exp_en: "Pahul involved drinking sanctified nectar (Amrit) from a single bowl to remove caste distinctions."
+            },
+            {
+                q_hi: "सिख इतिहास की संधियों एवं उनके वर्षों के संदर्भ में कौन-सा युग्म असुमेलित है?",
+                q_en: "Which pair is incorrectly matched regarding treaties in Sikh history and their years?",
+                options_hi: ["लाहौर की संधि — 1846 ई.", "भैरोंवाल की संधि — 1846 ई.", "अमृतसर की संधि — 1809 ई.", "सालबाई की संधि — 1849 ई."],
+                options_en: ["Treaty of Lahore — 1846 AD", "Treaty of Bhyrowal — 1846 AD", "Treaty of Amritsar — 1809 AD", "Treaty of Salbai — 1849 AD"],
+                ans: 3,
+                exp_hi: "सालबाई की संधि 1782 में मराठों और अंग्रेजों के बीच हुई थी, यह किसी सिख युद्ध या 1849 की घटना से संबंधित नहीं है।",
+                exp_en: "Treaty of Salbai took place in 1782 between Marathas and British, not 1849."
+            },
+            {
+                q_hi: "निम्नलिखित में से कौन-सा युग्म गलत है?",
+                q_en: "Which of the following pairs is incorrect?",
+                options_hi: ["गुरु हरकिशन — नांदेड़ में ज्योति-जोत समाना", "गुरु तेग बहादुर — शीशगंज में शहादत", "गुरु गोविंद सिंह — जन्म स्थान पटना", "गुरु अंगद — प्रारंभिक नाम लहना"],
+                options_en: ["Guru Harkrishan — Demise at Nanded", "Guru Tegh Bahadur — Martyrdom at Sis Ganj", "Guru Gobind Singh — Birthplace Patna", "Guru Angad — Early name Lehna"],
+                ans: 0,
+                exp_hi: "आठवें गुरु हरकिशन जी की मृत्यु दिल्ली में चेचक से हुई थी। नांदेड़ में दसवें गुरु गोविंद सिंह जी ज्योति-जोत समाए थे।",
+                exp_en: "Guru Harkrishan Ji passed away in Delhi; Nanded is associated with Guru Gobind Singh Ji."
+            },
+            {
+                q_hi: "निम्नलिखित में से कौन-सा क्रम गुरु गोविंद सिंह जी के जीवन से सबसे अधिक संबंधित है?",
+                q_en: "Which timeline best represents the major milestones in Guru Gobind Singh Ji's life?",
+                options_hi: ["जन्म → नांदेड़ गमन → दसवें गुरु घोषणा → खालसा पंथ", "खालसा पंथ → जन्म → दसवें गुरु → नांदेड़ गमन", "पटना में जन्म → खालसा पंथ → दसवें गुरु → नांदेड़ गमन", "पटना में जन्म (1666) → दसवें गुरु घोषित (1676) → खालसा पंथ की स्थापना (1699) → नांदेड़ में ज्योति-जोत समाना (1708)"],
+                options_en: ["Birth → Nanded → 10th Guru → Khalsa", "Khalsa → Birth → 10th Guru → Nanded", "Patna Birth → Khalsa → 10th Guru → Nanded", "Birth at Patna (1666) → Declared 10th Guru (1676) → Founded Khalsa (1699) → Passing at Nanded (1708)"],
+                ans: 3,
+                exp_hi: "1666 में पटना में जन्म, 1676 में गुरु गद्दी, 1699 में खालसा पंथ स्थापना और 1708 में नांदेड़ में गुरु गोविंद सिंह जी शहीद हुए।",
+                exp_en: "Birth at Patna (1666) -> Guruship (1676) -> Khalsa Creation (1699) -> Passed away at Nanded (1708)."
+            },
+            {
+                q_hi: "कौन-सा कथन सही है?",
+                q_en: "Which statement is correct?",
+                options_hi: ["गुरु तेग बहादुर जी ने लवन विवाह पद्धति शुरू की थी।", "11 नवंबर, 1675 को वर्तमान शीशगंज गुरुद्वारा के निकट गुरु तेग बहादुर जी को शहीद किया गया।", "गुरु तेग बहादुर जी ने अकाल तख्त का निर्माण करवाया था।", "गुरु तेग बहादुर जी को पटना में शहीद किया गया था।"],
+                options_en: ["Guru Tegh Bahadur started Lavan system.", "Guru Tegh Bahadur was martyred on Nov 11, 1675 near present Gurdwara Sis Ganj.", "Guru Tegh Bahadur built Akal Takht.", "Guru Tegh Bahadur was martyred in Patna."],
+                ans: 1,
+                exp_hi: "औरंगजेब के आदेश पर 11 नवंबर 1675 को दिल्ली के चांदनी चौक (वर्तमान गुरुद्वारा शीशगंज) में नौवें गुरु तेग बहादुर जी शहीद हुए।",
+                exp_en: "9th Guru Tegh Bahadur Ji was executed on Nov 11, 1675 at Chandni Chowk, Delhi (site of Gurdwara Sis Ganj)."
+            },
+            {
+                q_hi: "सिख इतिहास के प्रमुख व्यक्तित्वों और उनके उपनामों/उपाधियों का सही मिलान कीजिए: (A) गुरु नानक (B) सियां साहब (C) लक्ष्मणदास | उपाधि/नाम: 1. भगत जवाहर मल, 2. बंदा बहादुर का मूल नाम, 3. सिख संप्रदाय के संस्थापक",
+                q_en: "Match personalities with titles/names: (A) Guru Nanak (B) Siyan Sahib (C) Laxmandas | Titles: 1. Bhagat Jawahar Mal, 2. Original name of Banda Bahadur, 3. Founder of Sikhism",
+                options_hi: ["A-1, B-2, C-3", "A-2, B-3, C-1", "A-3, B-1, C-2", "A-3, B-2, C-1"],
+                options_en: ["A-1, B-2, C-3", "A-2, B-3, C-1", "A-3, B-1, C-2", "A-3, B-2, C-1"],
+                ans: 2,
+                exp_hi: "सिख संस्थापक गुरु नानक थे, कूका नेता भगत जवाहर मल को सियां साहब कहते थे तथा बंदा बहादुर का मूल नाम लक्ष्मणदास था।",
+                exp_en: "Guru Nanak was Founder of Sikhism; Bhagat Jawahar Mal was Siyan Sahib; Laxmandas was Banda Bahadur's original name."
+            },
+            {
+                q_hi: "सिख गुरुओं और मुगल शासकों के संबंधों का सही मिलान पहचानिए: (i) गुरु अमरदास -> बादशाह अकबर द्वारा गोइंदवाल में भेंट (ii) गुरु हरराय -> दारा शिकोह को आशीर्वाद देना",
+                q_en: "Match Sikh Gurus and Mughal relations: (i) Guru Amar Das -> Visit by Emperor Akbar at Goindwal (ii) Guru Har Rai -> Blessing Dara Shikoh",
+                options_hi: ["केवल 2", "1 और 2 दोनों", "इनमें से कोई नहीं", "केवल 1"],
+                options_en: ["Only 2", "Both 1 and 2", "None of these", "Only 1"],
+                ans: 1,
+                exp_hi: "अकबर ने गोइंदवाल जाकर गुरु अमरदास जी से भेंट की थी और गुरु हरराय जी ने शरण में आए दारा शिकोह को अपना आशीर्वाद दिया था।",
+                exp_en: "Akbar met Guru Amar Das at Goindwal, and Guru Har Rai blessed Dara Shikoh when he sought refuge."
+            },
+            {
+                q_hi: "निम्न में से कौन-सा युग्म सही है?",
+                q_en: "Which pair is correct?",
+                options_hi: ["शेर सिंह — काबुल का नया शासक", "महाराजा दलीप सिंह — 50,000 पौंड की वार्षिक पेंशन और इंग्लैंड प्रस्थान", "महारानी जिंदा — 1,00,000 पौंड की वार्षिक पेंशन", "रणजीत सिंह — अंग्रेजों द्वारा पेंशनभोगी नवाब"],
+                options_en: ["Sher Singh — New ruler of Kabul", "Maharaja Duleep Singh — £50,000 annual pension and departure to England", "Rani Jindan — £1,00,000 annual pension", "Ranjit Singh — Pensioned Nawab by British"],
+                ans: 1,
+                exp_hi: "पंजाब विलय के पश्चात अंतिम सिख महाराजा दलीप सिंह को 50,000 पौंड की वार्षिक पेंशन देकर पढ़ाई हेतु इंग्लैंड भेज दिया गया।",
+                exp_en: "After annexation, Maharaja Duleep Singh was granted an annual pension of £50,000 and sent to England."
+            },
+            {
+                q_hi: "कथन (A): गुरु अर्जुन देव जी को 1606 ई. में मुगल बादशाह जहांगीर ने मृत्युदंड दे दिया। कारण (R): गुरु अर्जुन देव जी ने जहांगीर के विद्रोही पुत्र शहजादे खुसरो को आशीर्वाद और आर्थिक सहायता प्रदान की थी।",
+                q_en: "Assertion (A): Guru Arjan Dev Ji was executed by Jahangir in 1606 AD. Reason (R): Guru Arjan Dev Ji had blessed and financially supported Prince Khusrau, Jahangir's rebellious son.",
+                options_hi: ["(A) गलत है, परंतु (R) सही है।", "(A) सही है, परंतु (R) गलत है।", "(A) और (R) दोनों सही हैं तथा (R), (A) की सही व्याख्या करता है।", "(A) और (R) दोनों सही हैं, परंतु (R), (A) की सही व्याख्या नहीं करता है।"],
+                options_en: ["A false, R true", "A true, R false", "Both A and R true and R correct explanation", "Both A and R true but R NOT correct explanation"],
+                ans: 2,
+                exp_hi: "जहांगीर के विद्रोही पुत्र खुसरो को आशीर्वाद व मदद देने के कारण जहांगीर ने 1606 में पांचवें गुरु अर्जुन देव जी को मरवा दिया।",
+                exp_en: "Jahangir ordered the execution of 5th Guru Arjan Dev Ji in 1606 for supporting his rebellious son Khusrau."
+            },
+            {
+                q_hi: "राम सिंह कूका के राजनीतिक कार्यों से संबंधित कौन-सा कथन सही है?",
+                q_en: "Which statement regarding Ram Singh Kuka's political activities is correct?",
+                options_hi: ["इन्होंने दल खालसा के सेनापति का पद संभाला था।", "इन्होंने 1857 में लुधियाना में स्वतंत्रता का श्वेत ध्वज फहराया तथा 1872 में मलेरकोटला पर हमला किया।", "इन्होंने महाराजा दलीप सिंह को पुनः लाहौर की गद्दी पर बैठाया।", "इन्होंने अंग्रेजों के साथ मिलकर अमृतसर की संधि पर हस्ताक्षर किए।"],
+                options_en: ["He served as commander of Dal Khalsa.", "He unfurled white flag of independence in Ludhiana in 1857 and attacked Malerkotla in 1872.", "He reinstated Duleep Singh on Lahore throne.", "He signed Treaty of Amritsar with British."],
+                ans: 1,
+                exp_hi: "बाबा राम सिंह कूका ने 1857 में स्वतंत्रता का सफेद ध्वज फहराया और ब्रिटिश नीतियों के विरुद्ध मलेरकोटला में विद्रोह किया।",
+                exp_en: "Baba Ram Singh hoisted white flag for freedom in 1857 at Ludhiana and led revolt against British at Malerkotla in 1872."
+            },
+            {
+                q_hi: "निम्न में से कौन-सा युग्म सही है?",
+                q_en: "Which pair is correctly matched?",
+                options_hi: ["रणजीत सिंह — राजधानी अमृतसर", "गुरु तेग बहादुर — समाधि स्थल पटना", "गुरु गोविंद सिंह — जन्म स्थान नांदेड़", "बंदा बहादुर — राजधानी लौहगढ़"],
+                options_en: ["Ranjit Singh — Capital Amritsar", "Guru Tegh Bahadur — Memorial at Patna", "Guru Gobind Singh — Birthplace Nanded", "Banda Bahadur — Capital Lohgarh"],
+                ans: 3,
+                exp_hi: "बंदा बहादुर ने पंजाब में स्वतंत्र सिख राज्य की स्थापना के प्रयास में लौहगढ़ के किले को अपनी राजधानी बनाया था।",
+                exp_en: "Banda Bahadur established Lohgarh Fort as his capital for sovereign Sikh administration."
+            },
+            {
+                q_hi: "कथन (A): राम सिंह कूका को आजीवन कारावास देकर रंगून की मांडले जेल भेज दिया गया, जहाँ 1885 में वे शहीद हुए। कारण (R): 1872 में कूका कार्यकर्ताओं ने मलेरकोटला और मालोध पर हिंसक आक्रमण कर ब्रिटिश सत्ता को चुनौती दी थी।",
+                q_en: "Assertion (A): Ram Singh Kuka was exiled to Mandalay Jail, Burma, where he died in 1885. Reason (R): Kuka activists attacked Malerkotla and Malaudh in 1872, challenging British rule.",
+                options_hi: ["A ग़लत हैं किंतु R सही हैं", "A और R दोनों सही हैं और R, A का सही स्पष्टीकरण हैं", "A और R दोनों सही हैं और R, A का सही स्पष्टीकरण नहीं हैं", "A सही हैं किंतु R ग़लत हैं"],
+                options_en: ["A false, R true", "Both A and R true and R correct explanation", "Both A and R true but R NOT correct explanation", "A true, R false"],
+                ans: 1,
+                exp_hi: "1872 के मलेरकोटला हमले के बाद ब्रिटिश दमन के तहत बाबा राम सिंह को बर्मा निर्वासित किया गया, जहाँ 1885 में वे शहीद हुए।",
+                exp_en: "Following the Malerkotla incident in 1872, Ram Singh was deported to Mandalay where he passed away in 1885."
+            },
+            {
+                q_hi: "सिख इतिहास की प्रमुख घटनाओं और स्थानों के संदर्भ में कौन-सा युग्म असुमेलित है?",
+                q_en: "Which pair is incorrectly matched regarding sites in Sikh history?",
+                options_hi: ["नांदेड़ — गुरु गोविंद सिंह जी की हत्या स्थल", "शीशगंज — गुरु तेग बहादुर जी का शहादत स्थल", "शहादरा — कतलगढ़ी (बंदा बहादुर द्वारा मुगलों का संहार)", "गोइंदवाल — गुरु नानक देव जी की मृत्यु स्थल"],
+                options_en: ["Nanded — Assassination site of Guru Gobind Singh", "Sis Ganj — Martyrdom place of Guru Tegh Bahadur", "Shahdara — Katalgarhi", "Goindwal — Death place of Guru Nanak Dev Ji"],
+                ans: 3,
+                exp_hi: "गुरु नानक देव जी की मृत्यु 1539 ई. में करतारपुर (रावी तट) में हुई थी, गोइंदवाल में तीसरे गुरु अमरदास जी रहे थे।",
+                exp_en: "Guru Nanak Dev Ji passed away at Kartarpur in 1539 AD; Goindwal is connected to 3rd Guru Amar Das Ji."
+            },
+            {
+                q_hi: "सिख इतिहास में 'मिसल' शब्द किस विदेशी भाषा से संबंधित है जिसका अर्थ 'समान' होता है?",
+                q_en: "The word 'Misl' in Sikh history originates from which foreign language meaning 'equal'?",
+                options_hi: ["पश्तो भाषा", "तुर्की भाषा", "फारसी भाषा", "अरबी भाषा"],
+                options_en: ["Pashto", "Turkish", "Persian", "Arabic"],
+                ans: 3,
+                exp_hi: "'मिसल' अरबी भाषा का मूल शब्द है, जिसका शाब्दिक अर्थ 'समान' या 'बराबर' होता है। पंजाब में कुल 12 स्वतंत्र मिसलें थीं।",
+                exp_en: "'Misl' is derived from Arabic language, literally meaning 'equal' or 'alike'."
+            },
+            {
+                q_hi: "कथन (A): गुरु तेग बहादुर जी को 11 नवंबर, 1675 को दिल्ली में औरंगजेब के आदेश पर शहीद कर दिया गया। कारण (R): गुरु तेग बहादुर जी ने इस्लाम धर्म स्वीकार करने से स्पष्ट इनकार कर दिया था।",
+                q_en: "Assertion (A): Guru Tegh Bahadur Ji was martyred on Nov 11, 1675 in Delhi on Aurangzeb's order. Reason (R): He refused to convert to Islam.",
+                options_hi: ["(A) सही है, परंतु (R) गलत है।", "(A) गलत है, परंतु (R) सही है।", "(A) और (R) दोनों सही हैं तथा (R), (A) की सही व्याख्या करता है।", "(A) और (R) दोनों सही हैं, परंतु (R), (A) की सही व्याख्या नहीं करता है।"],
+                options_en: ["A true, R false", "A false, R true", "Both A and R true and R correct explanation", "Both A and R true but R NOT correct explanation"],
+                ans: 2,
+                exp_hi: "औरंगजेब की धार्मिक कट्टरता के सामने इस्लाम स्वीकार न करने पर नौवें गुरु तेग बहादुर जी को चांदनी चौक में शहीद किया गया।",
+                exp_en: "Guru Tegh Bahadur Ji refused forced conversion to Islam, leading to his martyrdom in Delhi under Aurangzeb."
+            },
+            {
+                q_hi: "आंग्ल-सिख युद्ध के दौरान प्रमुख लडाइयों का सही क्रम कौन-सा है?",
+                q_en: "What is the correct sequence of battles during Anglo-Sikh Wars?",
+                options_hi: ["गुजरात लड़ाई → चिलियानवाला लड़ाई → लाहौर संधि → मुदकी", "लाहौर संधि → गुजरात लड़ाई → मुदकी → चिलियानवाला", "मुदकी/प्रथम युद्ध → लाहौर संधि → चिलियानवाला की लड़ाई → गुजरात की लड़ाई", "चिलियानवाला → मुदकी → गुजरात → लाहौर संधि"],
+                options_en: ["Gujrat → Chillianwala → Lahore Treaty → Mudki", "Lahore Treaty → Gujrat → Mudki → Chillianwala", "Battle of Mudki/1st War → Treaty of Lahore → Battle of Chillianwala → Battle of Gujrat", "Chillianwala → Mudki → Gujrat → Lahore Treaty"],
+                ans: 2,
+                exp_hi: "पहले प्रथम सिख युद्ध (1845-46) व लाहौर संधि हुई, फिर द्वितीय युद्ध में चिलियानवाला व अंत में गुजरात की लड़ाई (1849) हुई।",
+                exp_en: "Mudki (1845) -> Treaty of Lahore (1846) -> Chillianwala (Jan 1849) -> Gujrat (Feb 1849)."
+            },
+            {
+                q_hi: "निम्न में से कौन-सा युग्म सही है?",
+                q_en: "Which pair is correct?",
+                options_hi: ["कूका आंदोलन का मुख्यालय — हजारा (पाकिस्तान)", "दल खालसा का मुख्यालय — काबुल", "बंदा बहादुर का जन्म — लाहौर", "सिंह सभा का मुख्यालय — लंदन"],
+                options_en: ["Headquarters of Kuka Movement — Hazara (Pakistan)", "Headquarters of Dal Khalsa — Kabul", "Birthplace of Banda Bahadur — Lahore", "Headquarters of Singh Sabha — London"],
+                ans: 0,
+                exp_hi: "भगत जवाहर मल और बालक सिंह ने कूका (नामधारी) आंदोलन का मुख्य संगठनात्मक केंद्र हजारा (वर्तमान पाकिस्तान) में बनाया था।",
+                exp_en: "Hazara (in present-day Pakistan) served as the early organizational center for Kuka Movement."
+            },
+            {
+                q_hi: "महाराजा रणजीत सिंह के प्रमुख मंत्रियों और उनके पदों का सही मिलान कीजिए: (A) फकीर अजीजुद्दीन (B) दीनानाथ (C) महासिंह | पद/संबंध: 1. वित्त मंत्री, 2. विदेश मंत्री, 3. पिता (सुकरचकिया मिसल के मुखिया)",
+                q_en: "Match Maharaja Ranjit Singh's ministers and roles: (A) Fakir Azizuddin (B) Dina Nath (C) Maha Singh | Roles: 1. Finance Minister, 2. Foreign Minister, 3. Father (Chief of Sukerchakia Misl)",
+                options_hi: ["A-2, B-1, C-3", "A-2, B-3, C-1", "A-1, B-2, C-3", "A-3, B-1, C-2"],
+                options_en: ["A-2, B-1, C-3", "A-2, B-3, C-1", "A-1, B-2, C-3", "A-3, B-1, C-2"],
+                ans: 0,
+                exp_hi: "रणजीत सिंह के विदेश मंत्री फकीर अजीजुद्दीन, वित्त मंत्री दीनानाथ थे तथा उनके पिता महासिंह सुकरचकिया मिसल के प्रमुख थे।",
+                exp_en: "Fakir Azizuddin was Foreign Minister, Dina Nath was Finance Minister, and Maha Singh was father of Ranjit Singh."
+            },
+            {
+                q_hi: "निम्नलिखित में से कौन-सा क्रम गुरु नानक देव जी के जीवन-दर्शन एवं संस्थागत विकास से सबसे अधिक संबंधित है?",
+                q_en: "Which sequence best represents Guru Nanak Dev Ji's life philosophy and institution building?",
+                options_hi: ["आदि ग्रंथ का संकलन → पंगत की स्थापना → गुरु पद का त्याग", "पाहुल प्रणाली की शुरुआत → संगत की स्थापना → करतारपुर गमन", "आध्यात्मिक पुनर्जागरण का आभास (1496) → संगत एवं पंगत की स्थापना → करतारपुर में ज्योति-जोत समाना (1539)", "संगत की स्थापना → करतारपुर गमन → लवन विवाह पद्धति का प्रचलन"],
+                options_en: ["Compilation of Adi Granth → Pangat → Renouncing Guruship", "Pahul System → Sangat → Kartarpur Shift", "Spiritual Enlightenment (1496) → Establishment of Sangat & Pangat → Demise at Kartarpur (1539)", "Sangat → Kartarpur → Lavan system"],
+                ans: 2,
+                exp_hi: "गुरु नानक देव जी को 1496 में आध्यात्मिक आभास हुआ, उन्होंने संगत व पंगत संस्थाएं बनाईं और 1539 में करतारपुर में समाधि ली।",
+                exp_en: "Enlightenment in 1496 -> Founded Sangat and Pangat institutions -> Passed away at Kartarpur in 1539."
+            },
+            {
+                q_hi: "कौन-सा कथन सही है?",
+                q_en: "Which statement is correct?",
+                options_hi: ["अमृतसर की संधि लॉर्ड डलहौजी और दलीप सिंह के मध्य हुई थी।", "25 अप्रैल, 1809 को चार्ल्स मेटकाफ और महाराजा रणजीत सिंह के बीच अमृतसर की संधि हुई थी।", "रणजीत सिंह भंगी मिसल के प्रमुख नेता थे।", "1809 की संधि के तहत रणजीत सिंह ने सतलज पार का क्षेत्र अंग्रेजों से छीन लिया था।"],
+                options_en: ["Treaty of Amritsar was signed between Dalhousie and Duleep Singh.", "Treaty of Amritsar was signed on April 25, 1809 between Charles Metcalfe and Maharaja Ranjit Singh.", "Ranjit Singh was leader of Bhangi Misl.", "Ranjit Singh seized trans-Sutlej territory from British in 1809."],
+                ans: 1,
+                exp_hi: "25 अप्रैल 1809 को अंग्रेजों (चार्ल्स मेटकाफ) और रणजीत सिंह के बीच अमृतसर संधि हुई, जिसने सतलज को सीमा निर्धारित किया।",
+                exp_en: "Treaty of Amritsar was signed on 25 April 1809 between Charles Metcalfe and Maharaja Ranjit Singh."
+            },
+            {
+                q_hi: "कथन (A): अकबर ने गुरु अमरदास जी की पुत्री बीबी भानी को कई गांव और 500 बीघा भूमि दान में दी थी। कारण (R): अकबर सिख गुरु अमरदास जी के आध्यात्मिक विचारों से अत्यधिक प्रभावित होकर स्वयं गोइंदवाल गया था।",
+                q_en: "Assertion (A): Akbar gifted 500 Bighas of land to Bibi Bhani, daughter of Guru Amar Das Ji. Reason (R): Impressed by Guru Amar Das Ji's spiritual teachings, Akbar visited him at Goindwal.",
+                options_hi: ["(A) और (R) दोनों सही हैं, परंतु (R), (A) की सही व्याख्या नहीं करता है।", "(A) गलत है, परंतु (R) सही है।", "(A) और (R) दोनों सही हैं तथा (R), (A) की सही व्याख्या करता है।", "(A) सही है, परंतु (R) गलत है।"],
+                options_en: ["Both A and R true, but R NOT correct explanation", "A false, R true", "Both A and R true and R correct explanation", "A true, R false"],
+                ans: 2,
+                exp_hi: "अकबर गुरु अमरदास जी के दर्शनार्थ गोइंदवाल गया और उनकी बेटी बीबी भानी को 500 बीघा जमीन दी, जहां बाद में अमृतसर बसा।",
+                exp_en: "Akbar visited Guru Amar Das Ji at Goindwal and granted land to Bibi Bhani where Amritsar was later developed."
+            },
+            {
+                q_hi: "गुरु गोविंद सिंह जी द्वारा फारसी भाषा में रचित ऐतिहासिक पत्र 'जफरनामा' किस पर आधारित है?",
+                q_en: "What is the historical Persian letter 'Zafarnama' written by Guru Gobind Singh Ji based on?",
+                options_hi: ["महाराजा रणजीत सिंह के राज्याभिषेक के विवरण पर", "बंदा बहादुर को सैन्य संगठन सौंपने के आदेश पत्र पर", "आदि ग्रंथ के आध्यात्मिक भजनों के संकलन पर", "मुगल बादशाह औरंगजेब की नीतियों एवं नैतिक पराजय पर आधारित चेतावनी पत्र"],
+                options_en: ["Details of Ranjit Singh's coronation", "Order delegating army command to Banda Bahadur", "Collection of spiritual hymns", "Letter of victory/warning addressing Aurangzeb's moral defeat and unethical policies"],
+                ans: 3,
+                exp_hi: "जफरनामा (विजय पत्र) गुरु गोविंद सिंह जी द्वारा फारसी में मुगल बादशाह औरंगजेब को लिखा गया प्रसिद्ध नैतिक व ऐतिहासिक पत्र है।",
+                exp_en: "Zafarnama (Epistle of Victory) was written in Persian to Emperor Aurangzeb criticizing his unethical betrayal."
+            },
+            {
+                q_hi: "निम्नलिखित में से कौन-सा युग्म गलत है?",
+                q_en: "Which of the following pairs is incorrect?",
+                options_hi: ["बंदा बहादुर की समाधि — अमृतसर", "गुरु गोविंद सिंह का निवास स्थान — आनंदपुर साहिब", "गुरु गोविंद सिंह की कार्यस्थली — पाओंता", "रणजीत सिंह की जन्मस्थली — गुजरांवाला"],
+                options_en: ["Banda Bahadur's Memorial — Amritsar", "Guru Gobind Singh's Residence — Anandpur Sahib", "Guru Gobind Singh's Center — Paonta Sahib", "Ranjit Singh's Birthplace — Gujranwala"],
+                ans: 0,
+                exp_hi: "बंदा बहादुर को 1716 में दिल्ली में मुगल बादशाह फर्रुखसियर के आदेश पर घोर यातनाएं देकर शहीद किया गया था।",
+                exp_en: "Banda Bahadur was executed in Delhi in 1716 AD under orders of Farrukhsiyar."
+            },
+            {
+                q_hi: "कौन-सा कथन सही है?",
+                q_en: "Which statement is correct?",
+                options_hi: ["चिलियानवाला की लड़ाई में अंग्रेजों का नेतृत्व लॉर्ड डलहौजी ने स्वयं किया था।", "द्वितीय आंग्ल-सिख युद्ध के दौरान चिलियानवाला की लड़ाई सिख नेता शेर सिंह और अंग्रेज कमांडर गफ के मध्य लड़ी गई।", "प्रथम आंग्ल-सिख युद्ध 1849 में हुआ था।", "गुजरात की लड़ाई झेलम नदी के तट पर लड़ी गई थी।"],
+                options_en: ["Dalhousie directly led British in Chillianwala.", "Battle of Chillianwala in 2nd Anglo-Sikh War was fought between Sikh commander Sher Singh and British General Gough.", "1st Anglo-Sikh War occurred in 1849.", "Battle of Gujrat was fought on Jhelum banks."],
+                ans: 1,
+                exp_hi: "1849 में चिलियानवाला की प्रसिद्ध अनिर्णीत लड़ाई सिख सेनापति शेर सिंह और ब्रिटिश सेनापति लॉर्ड गफ के मध्य लड़ी गई थी।",
+                exp_en: "Battle of Chillianwala (Jan 1849) was fought between Sher Singh Attariwalla and General Lord Gough."
+            },
+            {
+                q_hi: "निम्न में से कौन-सा युग्म सही है?",
+                q_en: "Which pair is correct?",
+                options_hi: ["बंदा बहादुर — बचपन का नाम लक्ष्मणदास", "बंदा बहादुर — जन्म स्थान आनंदपुर साहिब", "बंदा बहादुर — उपाधि सच्चा पादशाह", "बंदा बहादुर — राजधानी पेशावर"],
+                options_en: ["Banda Bahadur — Childhood name Laxmandas", "Banda Bahadur — Birthplace Anandpur Sahib", "Banda Bahadur — Title Saccha Padshah", "Banda Bahadur — Capital Peshawar"],
+                ans: 0,
+                exp_hi: "बंदा बहादुर का जन्म 1670 में पुंछ के राजौरी में हुआ था और उनके बचपन का नाम लक्ष्मणदास (माधोदास) था।",
+                exp_en: "Banda Bahadur was born in Rajouri in 1670 AD and his childhood name was Laxman Das."
+            },
+            {
+                q_hi: "कथन (A): 1847 ई. में महारानी जिंदा को राजा दलीप सिंह से अलग कर शेखपुरा भेज दिया गया। कारण (R): ब्रिटिश अधिकारी महारानी जिंदा के राजनीतिक प्रभाव को समाप्त कर पंजाब प्रशासन पर पूर्ण नियंत्रण चाहते थे।",
+                q_en: "Assertion (A): In 1847, Rani Jindan was separated from King Duleep Singh and sent to Sheikhupura. Reason (R): British officials wanted to remove her political influence to gain full control over Punjab.",
+                options_hi: ["A और R दोनों सही हैं और R, A का सही स्पष्टीकरण नहीं हैं", "A सही हैं किंतु R ग़लत हैं", "A और R दोनों सही हैं और R, A का सही स्पष्टीकरण हैं", "A ग़लत हैं किंतु R सही हैं"],
+                options_en: ["Both A and R true but R NOT correct explanation", "A true, R false", "Both A and R true and R correct explanation", "A false, R true"],
+                ans: 2,
+                exp_hi: "ब्रिटिश रेजीडेंट ने पंजाब पर सीधा प्रभुत्व जमाने के लिए राजमाता जिंदा को 48,000 रु. पेंशन देकर शेखपुरा निर्वासित कर दिया।",
+                exp_en: "British Resident exiled Queen Regent Jind Kaur to Sheikhupura to neutralize her influence over Lahore Durbar."
+            },
+            {
+                q_hi: "गुरु साहिबान और उनके विशेष योगदान का सही मिलान कीजिए: (A) गुरु नानक (B) गुरु अंगद (C) गुरु गोविंद सिंह | योगदान: 1. लंगर व्यवस्था को स्थायी बनाना एवं गुरुमुखी लिपि, 2. लंगर व संगत की नींव, 3. पाहुल प्रणाली व खालसा पंथ",
+                q_en: "Match Sikh Gurus with contributions: (A) Guru Nanak (B) Guru Angad (C) Guru Gobind Singh | Contributions: 1. Standardizing Langar & Gurmukhi script, 2. Foundation of Sangat & Pangat, 3. Pahul System & Khalsa Panth",
+                options_hi: ["A-3, B-1, C-2", "A-1, B-2, C-3", "A-2, B-1, C-3", "A-2, B-3, C-1"],
+                options_en: ["A-3, B-1, C-2", "A-1, B-2, C-3", "A-2, B-1, C-3", "A-2, B-3, C-1"],
+                ans: 2,
+                exp_hi: "गुरु नानक ने लंगर-संगत शुरू किया, गुरु अंगद ने गुरुमुखी लिपि दी तथा गुरु गोविंद सिंह ने पाहुल व खालसा पंथ की नींव रखी।",
+                exp_en: "Guru Nanak started Sangat/Pangat; Guru Angad standardized Gurmukhi; Guru Gobind Singh created Khalsa & Pahul."
+            },
+            {
+                q_hi: "सिख आंदोलनों और उनके प्रतीकों का सही मिलान पहचानिए: (i) राम सिंह कूका -> स्वतंत्रता का श्वेत ध्वज (ii) गुरु गोविंद सिंह -> पांच ककार",
+                q_en: "Identify correct match of Sikh movements and symbols: (i) Ram Singh Kuka -> White Flag of Freedom (ii) Guru Gobind Singh -> 5 Kakkars",
+                options_hi: ["केवल 1", "केवल 2", "इनमें से कोई नहीं", "1 और 2 दोनों"],
+                options_en: ["Only 1", "Only 2", "None of these", "Both 1 and 2"],
+                ans: 3,
+                exp_hi: "राम सिंह कूका ने लुधियाना में 1857 में श्वेत ध्वज फहराया था तथा गुरु गोविंद सिंह जी ने खालसा को पांच ककार अनिवार्य किए।",
+                exp_en: "Ram Singh Kuka raised white flag in 1857 and Guru Gobind Singh Ji prescribed 5 Kakkars for Khalsa."
+            },
+            {
+                q_hi: "आदि ग्रंथ (गुरु ग्रंथ साहिब) के संकलन के संदर्भ में कौन सही है? 1. इसका संकलन पांचवें गुरु, गुरु अर्जुन देव जी ने किया। 2. इसमें सिख गुरुओं के साथ कबीर, नामदेव एवं रैदास की रचनाएं भी शामिल हैं।",
+                q_en: "Which are correct regarding compilation of Adi Granth? 1. Compiled by 5th Guru, Guru Arjan Dev Ji. 2. Includes hymns of Sikh Gurus along with Kabir, Namdev, and Ravidas.",
+                options_hi: ["1 और 2 दोनों", "केवल 1", "केवल 2", "इनमें से कोई नहीं"],
+                options_en: ["Both 1 and 2", "Only 1", "Only 2", "None of these"],
+                ans: 0,
+                exp_hi: "गुरु अर्जुन देव जी ने आदि ग्रंथ संकलित किया जिसमें सिख गुरुओं के साथ भक्त कबीर, नामदेव, रैदास आदि संतों की वाणी शामिल है।",
+                exp_en: "Guru Arjan Dev Ji compiled Adi Granth in 1604 AD, incorporating compositions of Sikh Gurus and revered Bhakti saints."
+            },
+            {
+                q_hi: "गुरु गोविंद सिंह जी के साहिबजादों से संबंधित कौन-सा कथन सही है?",
+                q_en: "Which statement regarding Guru Gobind Singh Ji's Sahibzadas is correct?",
+                options_hi: ["उन्हें औरंगजेब ने लाहौर की गद्दी सौंपी थी।", "वे पानीपत के युद्ध में लड़ते हुए शहीद हुए।", "साहिबजादा फतेह सिंह एवं जोरावर सिंह को सरहिंद के फौजदार वजीर खाँ ने दीवार में चिनवा दिया था।", "उन्हें जहांगीर ने दिल्ली में कैद कर लिया था।"],
+                options_en: ["Aurangzeb handed them Lahore throne.", "Martyred fighting in Battle of Panipat.", "Sahibzada Fateh Singh and Zorawar Singh were bricked alive by Wazir Khan in Sirhind.", "Imprisoned by Jahangir in Delhi."],
+                ans: 2,
+                exp_hi: "छोटे साहिबजादे जोरावर सिंह और फतेह सिंह ने धर्म नहीं छोड़ा, अतः सरहिंद के फौजदार वजीर खाँ ने उन्हें दीवार में चिनवा दिया।",
+                exp_en: "Younger Sahibzadas Zorawar Singh and Fateh Singh were bricked alive at Sirhind by Governor Wazir Khan."
+            },
+            {
+                q_hi: "कथन (A): गुरु हरगोविंद जी ने दो तलवारें बांधकर गद्दी पर बैठने और दरबार में नगाड़ा बजाने की व्यवस्था की। कारण (R): वे सिख समुदाय को मुगलों के राजनीतिक एवं धार्मिक अत्याचारों से सुरक्षित रखने हेतु सैन्य रूप देना चाहते थे।",
+                q_en: "Assertion (A): Guru Hargobind Ji wore two swords on accession and introduced beating war drums in court. Reason (R): He sought to militarize Sikhs for self-defense against Mughal oppression.",
+                options_hi: ["A और R दोनों सही हैं और R, A का सही स्पष्टीकरण नहीं हैं", "A ग़लत हैं किंतु R सही हैं", "A सही हैं किंतु R ग़लत हैं", "A और R दोनों सही हैं और R, A का सही स्पष्टीकरण हैं"],
+                options_en: ["Both A and R true but R NOT correct explanation", "A false, R true", "A true, R false", "Both A and R true and R correct explanation"],
+                ans: 3,
+                exp_hi: "मुगल अत्याचारों के प्रतिरोध और आत्मरक्षा हेतु गुरु हरगोविंद जी ने मीरी-पीरी की दो तलवारें धारण कर सिखों को सैन्य रूप दिया।",
+                exp_en: "Guru Hargobind Ji donned two swords (Miri & Piri) to combine martial martial spirit with spiritual leadership for self-defense."
+            },
+            {
+                q_hi: "निम्नलिखित में से कौन-सा क्रम पंजाब के ब्रिटिश विलय के चरणों से सबसे अधिक संबंधित है?",
+                q_en: "Which timeline best summarizes British annexation steps of Punjab?",
+                options_hi: ["29 मार्च 1849 की घोषणा → चिलियानवाला लड़ाई → महारानी जिंदा का निर्वासन", "महारानी जिंदा को पेंशन देकर शेखपुरा भेजना (1847) → चिलियानवाला की लड़ाई → गुजरात की लड़ाई → 29 मार्च 1849 की घोषणा", "गुजरात की लड़ाई → महारानी जिंदा का निर्वासन → चिलियानवाला लड़ाई", "चिलियानवाला लड़ाई → 29 मार्च घोषणा → महारानी जिंदा का निर्वासन"],
+                options_en: ["29 March 1849 Annexation → Chillianwala → Exile of Rani Jindan", "Pensioning Rani Jindan to Sheikhupura (1847) → Battle of Chillianwala → Battle of Gujrat → Annexation on 29 March 1849", "Battle of Gujrat → Exile of Jindan → Chillianwala", "Chillianwala → 29 March Proclamation → Exile of Jindan"],
+                ans: 1,
+                exp_hi: "अंग्रेजों ने पहले 1847 में महारानी जिंदा को अलग किया, फिर 1849 में चिलियानवाला व गुजरात युद्ध जीतकर पंजाब का विलय किया।",
+                exp_en: "Exile of Rani Jindan (1847) -> Battle of Chillianwala (Jan 1849) -> Battle of Gujrat (Feb 1849) -> Annexation Declaration (March 29, 1849)."
+            },
+            {
+                q_hi: "सिखों के सैन्य पुनर्गठन की प्रक्रिया का सही क्रम कौन-सा है?",
+                q_en: "What is the correct chronological sequence of military evolution among Sikhs?",
+                options_hi: ["गुरु हरगोविंद द्वारा अकाल तख्त निर्माण → खालसा पंथ की स्थापना (1699) → दल खालसा का गठन (1748) → 12 मिसलें", "12 मिसलें → दल खालसा → अकाल तख्त → खालसा पंथ", "खालसा पंथ → अकाल तख्त → 12 मिसलें → दल खालसा", "दल खालसा → 12 मिसलें → अकाल तख्त → खालसा पंथ"],
+                options_en: ["Akal Takht construction by Guru Hargobind → Khalsa Panth (1699) → Dal Khalsa (1748) → 12 Misls", "12 Misls → Dal Khalsa → Akal Takht → Khalsa Panth", "Khalsa Panth → Akal Takht → 12 Misls → Dal Khalsa", "Dal Khalsa → 12 Misls → Akal Takht → Khalsa Panth"],
+                ans: 0,
+                exp_hi: "सिख सैन्य इतिहास में पहले अकाल तख्त बना, फिर 1699 में खालसा पंथ, 1748 में दल खालसा और अंत में 12 स्वतंत्र मिसलें उभरीं।",
+                exp_en: "Construction of Akal Takht -> Founding of Khalsa (1699) -> Formation of Dal Khalsa (1748) -> Emergence of 12 Misls."
+            },
+            {
+                q_hi: "सिख गुरुओं और उनके द्वारा स्थापित प्रमुख नगरों/संरचनाओं का सही मिलान कीजिए: (A) गुरु रामदास (B) गुरु अर्जुन देव (C) गुरु हरगोविंद | विवरण: 1. हरमंदर साहब का निर्माण, 2. अमृतसर नगर एवं जलाशय, 3. अकाल तख्त की स्थापना",
+                q_en: "Match Sikh Gurus with cities/structures: (A) Guru Ram Das (B) Guru Arjan Dev (C) Guru Hargobind | Features: 1. Construction of Harmandir Sahib, 2. Amritsar City & Sarovar, 3. Construction of Akal Takht",
+                options_hi: ["A-3, B-1, C-2", "A-1, B-2, C-3", "A-2, B-3, C-1", "A-2, B-1, C-3"],
+                options_en: ["A-3, B-1, C-2", "A-1, B-2, C-3", "A-2, B-3, C-1", "A-2, B-1, C-3"],
+                ans: 3,
+                exp_hi: "गुरु रामदास ने अमृतसर नगर व जलाशय खुदवाया, गुरु अर्जुन देव ने हरमंदर साहब बनवाया और गुरु हरगोविंद ने अकाल तख्त स्थापित किया।",
+                exp_en: "Guru Ram Das founded Amritsar city; Guru Arjan Dev built Sri Harmandir Sahib; Guru Hargobind built Akal Takht."
+            },
+            {
+                q_hi: "कौन-सा कथन सही है?",
+                q_en: "Which statement is correct?",
+                options_hi: ["गुरु नानक देव जी मुगल बादशाह बाबर एवं हुमायूं के समकालीन थे।", "गुरु नानक देव जी ने अमृतसर नगर बसाया था।", "गुरु नानक देव जी का जन्म दिल्ली में हुआ था।", "गुरु नानक देव जी अकबर के समकालीन थे।"],
+                options_en: ["Guru Nanak Dev Ji was contemporary to Mughal Emperors Babur and Humayun.", "Guru Nanak Dev Ji founded Amritsar city.", "Guru Nanak Dev Ji was born in Delhi.", "Guru Nanak Dev Ji was contemporary to Akbar."],
+                ans: 0,
+                exp_hi: "सिख धर्म के संस्थापक गुरु नानक देव जी (1469-1539) पहले दो मुगल बादशाहों—बाबर और हुमायूं के समकालीन थे।",
+                exp_en: "Founder Guru Nanak Dev Ji (1469-1539) lived during the reign of early Mughal rulers Babur and Humayun."
+            },
+            {
+                q_hi: "निम्नलिखित में से कौन-सा क्रम गुरु गोविंद सिंह जी के परिवार के बलिदान से सबसे अधिक संबंधित है?",
+                q_en: "Which timeline best reflects the sacrifice of Guru Gobind Singh Ji's family?",
+                options_hi: ["जफरनामा रचना → नांदेड़ गमन → आनंदपुर रक्षा → साहिबजादों की शहादत", "नांदेड़ गमन → साहिबजादों की शहादत → आनंदपुर रक्षा → जफरनामा", "आनंदपुर साहिब रक्षा → साहिबजादों की शहादत → जफरनामा रचना → नांदेड़ में ज्योति-जोत समाना", "साहिबजादों की शहादत → आनंदपुर रक्षा → नांदेड़ गमन → जफरनामा"],
+                options_en: ["Zafarnama → Nanded → Defense of Anandpur → Martyrdom of Sahibzadas", "Nanded → Martyrdom of Sahibzadas → Anandpur → Zafarnama", "Defense of Anandpur Sahib → Martyrdom of Sahibzadas → Composition of Zafarnama → Passing at Nanded", "Martyrdom of Sahibzadas → Anandpur → Nanded → Zafarnama"],
+                ans: 2,
+                exp_hi: "आनंदपुर के युद्ध के बाद साहिबजादों ने शहादत दी, फिर गुरु जी ने दीना कांगड़ में जफरनामा लिखा और अंततः नांदेड़ पहुंचे।",
+                exp_en: "Defense of Anandpur Sahib -> Martyrdom of Sahibzadas -> Composition of Zafarnama at Dina Kangar -> Reaching Nanded."
+            },
+            {
+                q_hi: "महाराजा रणजीत सिंह के जीवन की प्रमुख घटनाओं को कालानुक्रम व्यवस्थित कीजिए: 1. जन्म (1780) 2. लाहौर पर अधिकार (1798-99) 3. अमृतसर की संधि (1809) 4. मृत्यु (1839)",
+                q_en: "Arrange key events in Maharaja Ranjit Singh's life chronologically: 1. Birth (1780) 2. Capture of Lahore (1798-99) 3. Treaty of Amritsar (1809) 4. Death (1839)",
+                options_hi: ["2, 1, 3, 4", "1, 2, 3, 4", "4, 3, 2, 1", "1, 3, 2, 4"],
+                options_en: ["2, 1, 3, 4", "1, 2, 3, 4", "4, 3, 2, 1", "1, 3, 2, 4"],
+                ans: 1,
+                exp_hi: "रणजीत सिंह का जन्म 1780 में हुआ, 1799 में लाहौर जीता, 1809 में मेटकाफ से अमृतसर संधि की और 1839 में उनका देहांत हुआ।",
+                exp_en: "Birth (1780) -> Capture of Lahore (1799) -> Treaty of Amritsar (1809) -> Death (1839)."
+            },
+            {
+                q_hi: "महाराजा रणजीत सिंह के प्रशासनिक स्वरूप से संबंधित कौन-सा कथन सही है?",
+                q_en: "Which statement regarding administrative structure of Maharaja Ranjit Singh's empire is correct?",
+                options_hi: ["उनके दरबार में सभी उच्च पदों पर केवल यूरोपीय अधिकारी नियुक्त थे।", "उन्होंने अपनी राजधानी मुल्तान को बनाया था।", "उन्होंने संपूर्ण भारत पर एकछत्र शासन स्थापित किया था।", "उनका राज्य चार प्रमुख सूबों—पेशावर, कश्मीर, मुल्तान एवं लाहौर में विभाजित था।"],
+                options_en: ["Only Europeans held high posts in his court.", "He made Multan his capital.", "He established single rule over whole India.", "His empire was divided into 4 provinces — Peshawar, Kashmir, Multan, and Lahore."],
+                ans: 3,
+                exp_hi: "महाराजा रणजीत सिंह का विशाल सिख साम्राज्य प्रशासनिक दृष्टि से चार सूबों—पेशावर, कश्मीर, मुल्तान व लाहौर में बटा था।",
+                exp_en: "Maharaja Ranjit Singh's kingdom was administratively divided into 4 Subas: Peshawar, Kashmir, Multan, and Lahore."
+            }
+        ];
+
+        // ENGINE STATE VARIABLES
+        let currentLang = 'hi'; // 'hi' or 'en'
+        let currentQIndex = 0;
+        let studentAnswers = new Array(80).fill(null);
+        let userStatus = new Array(80).fill('not-visited'); // 'answered', 'not-answered', 'marked', 'not-visited'
+        let studentInfo = { name: '', roll: '' };
+
+        // TIMERS
+        let overallTimeLeft = 3600; // 60 minutes
+        let qTimeLeft = 72; // 1 min 12 secs
+        let overallInterval = null;
+        let qInterval = null;
+
+        // PHASE TRANSITIONS
+        function submitPhase1(e) {
+            e.preventDefault();
+            studentInfo.name = document.getElementById('student-name').value.trim();
+            studentInfo.roll = document.getElementById('student-roll').value.trim();
+            
+            if(!studentInfo.name || !studentInfo.roll) return;
+
+            document.getElementById('disp-name').innerText = studentInfo.name;
+            document.getElementById('disp-roll').innerText = studentInfo.roll;
+
+            document.getElementById('phase-1').classList.add('hidden');
+            document.getElementById('phase-2').classList.remove('hidden');
+        }
+
+        function startTest() {
+            document.getElementById('phase-2').classList.add('hidden');
+            document.getElementById('phase-3').classList.remove('hidden');
+            
+            initPalette();
+            loadQuestion(0);
+            startTimers();
+        }
+
+        // TIMER LOGIC
+        function startTimers() {
+            overallInterval = setInterval(() => {
+                if (overallTimeLeft <= 0) {
+                    clearInterval(overallInterval);
+                    autoSubmitTest();
+                } else {
+                    overallTimeLeft--;
+                    updateOverallTimerDisplay();
+                }
+            }, 1000);
+
+            resetQuestionTimer();
+        }
+
+        function resetQuestionTimer() {
+            clearInterval(qInterval);
+            qTimeLeft = 72;
+            updateQTimerDisplay();
+            qInterval = setInterval(() => {
+                if (qTimeLeft > 0) {
+                    qTimeLeft--;
+                    updateQTimerDisplay();
+                }
+            }, 1000);
+        }
+
+        function updateOverallTimerDisplay() {
+            let hrs = Math.floor(overallTimeLeft / 3600);
+            let mins = Math.floor((overallTimeLeft % 3600) / 60);
+            let secs = overallTimeLeft % 60;
+            document.getElementById('overall-timer').innerText = 
+                `${String(hrs).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+        }
+
+        function updateQTimerDisplay() {
+            let mins = Math.floor(qTimeLeft / 60);
+            let secs = qTimeLeft % 60;
+            document.getElementById('q-timer').innerText = 
+                `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+        }
+
+        // LANGUAGE TOGGLE
+        function toggleLanguage() {
+            currentLang = currentLang === 'hi' ? 'en' : 'hi';
+            loadQuestion(currentQIndex);
+        }
+
+        // DRAWER TOGGLE
+        function toggleDrawer() {
+            const drawer = document.getElementById('side-drawer');
+            drawer.classList.toggle('translate-x-full');
+        }
+
+        // PALETTE INITIALIZATION & RENDER
+        function initPalette() {
+            const grid = document.getElementById('palette-grid');
+            grid.innerHTML = '';
+            for (let i = 0; i < 80; i++) {
+                const btn = document.createElement('button');
+                btn.id = `palette-btn-${i}`;
+                btn.className = 'w-9 h-9 text-xs font-bold rounded flex items-center justify-center border shadow-sm transition bg-gray-300 text-gray-800';
+                btn.innerText = i + 1;
+                btn.onclick = () => {
+                    jumpToQuestion(i);
+                    if (window.innerWidth < 768) toggleDrawer();
+                };
+                grid.appendChild(btn);
+            }
+        }
+
+        function updatePaletteUI() {
+            for (let i = 0; i < 80; i++) {
+                const btn = document.getElementById(`palette-btn-${i}`);
+                if (!btn) continue;
+                
+                let st = userStatus[i];
+                btn.className = 'w-9 h-9 text-xs font-bold rounded flex items-center justify-center border shadow-sm transition ';
+                
+                if (i === currentQIndex) {
+                    btn.classList.add('ring-2', 'ring-blue-900', 'ring-offset-1');
+                }
+
+                if (st === 'answered') {
+                    btn.classList.add('bg-green-500', 'text-white', 'border-green-600');
+                } else if (st === 'not-answered') {
+                    btn.classList.add('bg-red-500', 'text-white', 'border-red-600');
+                } else if (st === 'marked') {
+                    btn.classList.add('bg-purple-600', 'text-white', 'border-purple-700');
+                } else {
+                    btn.classList.add('bg-gray-300', 'text-gray-800', 'border-gray-400');
+                }
+            }
+        }
+
+        // QUESTION RENDERING
+        function loadQuestion(index) {
+            currentQIndex = index;
+            resetQuestionTimer();
+
+            if (userStatus[currentQIndex] === 'not-visited') {
+                userStatus[currentQIndex] = 'not-answered';
+            }
+
+            const q = rawDatabase[currentQIndex];
+            document.getElementById('q-curr-num').innerText = currentQIndex + 1;
+            
+            // Status Tag
+            const tag = document.getElementById('q-status-tag');
+            let st = userStatus[currentQIndex];
+            if (st === 'answered') { tag.innerText = 'Answered'; tag.className = 'text-xs px-2 py-1 rounded bg-green-100 text-green-800 font-bold'; }
+            else if (st === 'not-answered') { tag.innerText = 'Not Answered'; tag.className = 'text-xs px-2 py-1 rounded bg-red-100 text-red-800 font-bold'; }
+            else if (st === 'marked') { tag.innerText = 'Marked for Review'; tag.className = 'text-xs px-2 py-1 rounded bg-purple-100 text-purple-800 font-bold'; }
+            else { tag.innerText = 'Not Visited'; tag.className = 'text-xs px-2 py-1 rounded bg-gray-200 text-gray-700 font-medium'; }
+
+            // Question Text
+            const qText = currentLang === 'hi' ? q.q_hi : q.q_en;
+            document.getElementById('q-text').innerText = `${currentQIndex + 1}. ${qText}`;
+
+            // Options
+            const opts = currentLang === 'hi' ? q.options_hi : q.options_en;
+            const optContainer = document.getElementById('q-options');
+            optContainer.innerHTML = '';
+
+            const prefixes = ['A', 'B', 'C', 'D'];
+            opts.forEach((optStr, oIdx) => {
+                const optDiv = document.createElement('div');
+                optDiv.className = `p-3 rounded-lg border cursor-pointer flex items-center space-x-3 transition ${studentAnswers[currentQIndex] === oIdx ? 'bg-blue-100 border-blue-600 font-semibold' : 'bg-gray-50 hover:bg-gray-100 border-gray-300'}`;
+                optDiv.onclick = () => selectOption(oIdx);
+
+                optDiv.innerHTML = `
+                    <span class="w-6 h-6 rounded-full border flex items-center justify-center text-xs font-bold ${studentAnswers[currentQIndex] === oIdx ? 'bg-blue-800 text-white' : 'bg-white text-gray-700'}">${prefixes[oIdx]}</span>
+                    <span class="text-sm md:text-base flex-1">${optStr}</span>
+                `;
+                optContainer.appendChild(optDiv);
+            });
+
+            updatePaletteUI();
+            if (window.MathJax) MathJax.typesetPromise();
+        }
+
+        function selectOption(oIdx) {
+            studentAnswers[currentQIndex] = oIdx;
+            userStatus[currentQIndex] = 'answered';
+            loadQuestion(currentQIndex);
+        }
+
+        function clearResponse() {
+            studentAnswers[currentQIndex] = null;
+            userStatus[currentQIndex] = 'not-answered';
+            loadQuestion(currentQIndex);
+        }
+
+        function saveAndNext() {
+            if (studentAnswers[currentQIndex] !== null) {
+                userStatus[currentQIndex] = 'answered';
+            } else {
+                userStatus[currentQIndex] = 'not-answered';
+            }
+            if (currentQIndex < 79) loadQuestion(currentQIndex + 1);
+            else updatePaletteUI();
+        }
+
+        function markForReview() {
+            userStatus[currentQIndex] = 'marked';
+            if (currentQIndex < 79) loadQuestion(currentQIndex + 1);
+            else updatePaletteUI();
+        }
+
+        function prevQuestion() {
+            if (currentQIndex > 0) loadQuestion(currentQIndex - 1);
+        }
+
+        function jumpToQuestion(index) {
+            loadQuestion(index);
+        }
+
+        // SUBMISSION & SCORECARD GENERATION
+        function confirmSubmit() {
+            if (confirm("Are you sure you want to submit the exam?")) {
+                autoSubmitTest();
+            }
+        }
+
+        function autoSubmitTest() {
+            clearInterval(overallInterval);
+            clearInterval(qInterval);
+
+            document.getElementById('phase-3').classList.add('hidden');
+            document.getElementById('phase-result').classList.remove('hidden');
+
+            calculateAndDisplayResult();
+        }
+
+        function calculateAndDisplayResult() {
+            let correct = 0;
+            let wrong = 0;
+            let unattempted = 0;
+
+            for (let i = 0; i < 80; i++) {
+                if (studentAnswers[i] === null) {
+                    unattempted++;
+                } else if (studentAnswers[i] === rawDatabase[i].ans) {
+                    correct++;
+                } else {
+                    wrong++;
+                }
+            }
+
+            let score = correct;
+            let accuracy = (correct + wrong) > 0 ? ((correct / (correct + wrong)) * 100).toFixed(1) : 0;
+            let percentage = ((correct / 80) * 100).toFixed(1);
+            let isPassed = percentage >= 70;
+
+            document.getElementById('res-name').innerText = studentInfo.name;
+            document.getElementById('res-roll').innerText = studentInfo.roll;
+            document.getElementById('res-score').innerText = score;
+            document.getElementById('res-correct').innerText = correct;
+            document.getElementById('res-wrong').innerText = wrong;
+            document.getElementById('res-unattempted').innerText = unattempted;
+            document.getElementById('res-accuracy').innerText = `${accuracy}%`;
+
+            const statusElem = document.getElementById('res-status');
+            statusElem.innerText = isPassed ? "PASSED (उत्तीर्ण)" : "FAILED (अनुत्तीर्ण)";
+            statusElem.className = isPassed ? "font-bold text-green-600" : "font-bold text-red-600";
+
+            // Render Detailed Solutions
+            const solContainer = document.getElementById('solutions-container');
+            solContainer.innerHTML = '';
+
+            const prefixes = ['A', 'B', 'C', 'D'];
+
+            rawDatabase.forEach((q, idx) => {
+                const userAns = studentAnswers[idx];
+                const isCorrect = userAns === q.ans;
+                const isUnattempted = userAns === null;
+
+                const solBox = document.createElement('div');
+                solBox.className = `p-4 rounded-lg border text-sm ${isCorrect ? 'bg-green-50 border-green-300' : (isUnattempted ? 'bg-gray-50 border-gray-300' : 'bg-red-50 border-red-300')}`;
+
+                let optsHtml = '';
+                const opts = currentLang === 'hi' ? q.options_hi : q.options_en;
+                opts.forEach((optText, oIdx) => {
+                    let optStyle = "text-gray-700";
+                    if (oIdx === q.ans) optStyle = "text-green-700 font-bold";
+                    if (oIdx === userAns && !isCorrect) optStyle = "text-red-700 font-bold line-through";
+
+                    optsHtml += `<div class="ml-4 ${optStyle}">(${prefixes[oIdx]}) ${optText}</div>`;
+                });
+
+                let userAnsText = isUnattempted ? "<span class='text-gray-500 font-semibold'>Not Attempted</span>" : `<span class="${isCorrect ? 'text-green-700' : 'text-red-700'} font-bold">(${prefixes[userAns]}) ${opts[userAns]}</span>`;
+                let correctAnsText = `<span class="text-green-700 font-bold">(${prefixes[q.ans]}) ${opts[q.ans]}</span>`;
+
+                solBox.innerHTML = `
+                    <div class="font-bold text-gray-900 mb-2">Q${idx + 1}. ${currentLang === 'hi' ? q.q_hi : q.q_en}</div>
+                    <div class="space-y-1 mb-3">${optsHtml}</div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs bg-white p-2.5 rounded border mb-2">
+                        <div>Your Answer: ${userAnsText}</div>
+                        <div>Correct Answer: ${correctAnsText}</div>
+                    </div>
+                    <div class="text-xs bg-blue-50 p-2.5 rounded border border-blue-200 text-blue-900 leading-relaxed">
+                        <strong>Explanation / व्याख्या:</strong> ${currentLang === 'hi' ? q.exp_hi : q.exp_en}
+                    </div>
+                `;
+
+                solContainer.appendChild(solBox);
+            });
+
+            if (window.MathJax) MathJax.typesetPromise();
+        }
+
+        // PDF DOWNLOAD
+        function downloadPDF() {
+            const element = document.getElementById('pdf-content');
+            const opt = {
+                margin:       0.3,
+                filename:     `Mock_Test_Result_${studentInfo.roll}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2 },
+                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(element).save();
+        }
+    </script>
+</body>
+</html>
